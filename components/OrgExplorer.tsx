@@ -22,6 +22,9 @@ import {
 import type { DeptNode, OrgErrorResponse, OrgResponse } from '@/lib/types';
 
 type ViewMode = 'chart' | 'list';
+
+/** Kunci localStorage untuk mengingat susunan buka/tutup bagan antar-kunjungan */
+const COLLAPSED_STORAGE_KEY = 'onda-org-chart:collapsed';
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; error: string; hint?: string; code?: number | string }
@@ -65,9 +68,11 @@ function StatChip({ label, value }: { label: string; value: number | string }) {
   }, [value]);
 
   return (
-    <div className="rounded-lg bg-white/10 px-3 py-1.5 backdrop-blur-sm">
-      <span className="text-sm font-semibold tabular-nums text-white">{display}</span>
-      <span className="ml-1.5 text-[11px] text-brand-100">{label}</span>
+    <div className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 backdrop-blur-sm">
+      <span className="text-base font-semibold tabular-nums text-white">{display}</span>
+      <span className="ml-1.5 text-[10px] font-medium uppercase tracking-wide text-brand-100">
+        {label}
+      </span>
     </div>
   );
 }
@@ -111,12 +116,30 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
       setState({ status: 'ready', data: json });
       setSelectedId((current) => current || json.root.id);
-      // Buka jalur governance sampai departemen inti; sub-departemen mulai tertutup.
-      // Jalur node yang sedang dipilih tetap dibuka supaya seleksi tidak "hilang"
-      // setelah sinkron ulang.
       const deptLevel = Math.max(2, json.deptLevel || 2);
       const nextExpanded = new Set(idsUpToLevel(json.root, deptLevel));
-      const nextCollapsed = new Set(idsFromLevel(json.root, deptLevel));
+
+      // Susunan buka/tutup bagan diingat antar-kunjungan (localStorage).
+      // Kalau belum ada simpanan: default ringkas — hanya root + departemen
+      // level atas yang terlihat, semua cabang tertutup.
+      let nextCollapsed: Set<string> | null = null;
+      try {
+        const saved = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+        if (saved) {
+          const validIds = new Set(allDeptIds(json.root));
+          nextCollapsed = new Set(
+            (JSON.parse(saved) as string[]).filter((id) => validIds.has(id)),
+          );
+        }
+      } catch {
+        // Simpanan korup → pakai default
+      }
+      if (!nextCollapsed) {
+        nextCollapsed = new Set(idsFromLevel(json.root, Math.max(1, deptLevel - 1)));
+      }
+
+      // Jalur node yang sedang dipilih tetap dibuka supaya seleksi tidak
+      // "hilang" setelah sinkron ulang.
       const currentSelected = selectedIdRef.current;
       if (currentSelected) {
         for (const id of pathToNode(json.root, currentSelected)) {
@@ -140,6 +163,17 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Simpan susunan buka/tutup setiap kali berubah — jadi tampilan yang
+  // ditinggalkan user kembali sama saat web dibuka lagi
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    try {
+      localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify(Array.from(collapsed)));
+    } catch {
+      // localStorage penuh/di-blok → abaikan, cuma kenyamanan
+    }
+  }, [collapsed, state.status]);
 
   /* ---------------- derived ---------------- */
 
@@ -319,8 +353,13 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   return (
     <div className="print-h-auto flex h-screen flex-col">
       {/* ---------- Header ---------- */}
-      <header className="no-print relative overflow-hidden bg-gradient-to-r from-brand-700 to-brand-500 px-5 pb-12 pt-6 text-white">
+      <header className="no-print relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-brand-500 px-5 pb-12 pt-6 text-white">
         <HeroBackground />
+        {/* Glow lembut supaya gradien tidak datar */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-28 right-[15%] h-72 w-72 rounded-full bg-white/10 blur-3xl"
+        />
         <div className="relative mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
           <div className="anim-rise">
             <h1 className="text-2xl font-bold tracking-tight">{data.root.name || orgName}</h1>
@@ -393,7 +432,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
               <select
                 value={scopeId}
                 onChange={(e) => handleScopeChange(e.target.value)}
-                className="max-w-[220px] rounded-lg border border-slate-300 py-1.5 pl-2 pr-7 text-sm text-slate-700 outline-none transition focus:border-brand-400"
+                className="max-w-[220px] rounded-lg border border-slate-200 bg-white py-1.5 pl-2 pr-7 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-400"
                 aria-label="Cakupan bagan"
               >
                 <option value="">Seluruh organisasi</option>
@@ -410,7 +449,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                   setFitMode(false);
                   setZoom((z) => Math.max(0.3, Math.round((z - 0.1) * 10) / 10));
                 }}
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
+                className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
                 aria-label="Perkecil"
               >
                 −
@@ -424,7 +463,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                   setFitMode(false);
                   setZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10));
                 }}
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
+                className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
                 aria-label="Perbesar"
               >
                 +
@@ -436,7 +475,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                 className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
                   fitMode
                     ? 'border-brand-600 bg-brand-600 text-white'
-                    : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+                    : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 Pas layar
@@ -448,14 +487,14 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                   if (scopeId && chartRoot) setCollapsed(new Set(idsFromLevel(chartRoot, 1)));
                   else setCollapsed(new Set(idsFromLevel(root, Math.max(1, deptLevel - 1))));
                 }}
-                className="ml-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className="ml-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
               >
                 Tutup semua
               </button>
               <button
                 type="button"
                 onClick={() => setCollapsed(new Set())}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
               >
                 Buka semua
               </button>
@@ -467,14 +506,14 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
               <button
                 type="button"
                 onClick={() => root && setExpanded(new Set(allDeptIds(root)))}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
               >
                 Buka semua
               </button>
               <button
                 type="button"
                 onClick={() => root && setExpanded(new Set([root.id]))}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
               >
                 Tutup semua
               </button>
@@ -486,7 +525,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
             <button
               type="button"
               onClick={() => window.print()}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
             >
               Cetak
             </button>

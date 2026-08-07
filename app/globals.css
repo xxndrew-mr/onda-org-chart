@@ -34,6 +34,14 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Focus ring konsisten & aksesibel untuk navigasi keyboard */
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid #598dff;
+  outline-offset: 2px;
+}
+
 /* ---------- Animasi entrance ---------- */
 .anim-rise {
   animation: rise-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;

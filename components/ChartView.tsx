@@ -419,9 +419,11 @@ export default function ChartView({
       className="thin-scroll print-full chart-canvas flex h-full cursor-grab flex-col overflow-auto rounded-2xl border border-slate-200 p-6"
     >
       {/* CSS zoom (bukan transform) supaya layout & centering ikut terskala.
-          my-auto = tengah vertikal; self-center (bukan stretch) supaya lebar
-          alami bagan bisa diukur akurat untuk auto-fit */}
-      <div ref={treeRef} className="chart-tree my-auto inline-block min-w-full self-center">
+          mx-auto/my-auto (bukan self-center): auto-margin menengahkan konten
+          bila muat, tapi jatuh ke tepi kiri bila konten lebih lebar dari
+          kontainer — sehingga seluruh bagan tetap terjangkau scroll. Auto
+          margin juga mencegah stretch, jadi lebar alami tetap terukur. */}
+      <div ref={treeRef} className="chart-tree mx-auto my-auto inline-block min-w-full">
         <ul className="tree-row tree-row--root">
           <ChartBox
             node={root}

@@ -23,7 +23,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Inter', 'Arial', 'sans-serif'],
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Arial', 'sans-serif'],
       },
     },
   },
