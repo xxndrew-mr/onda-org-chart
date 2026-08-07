@@ -96,9 +96,11 @@ function ChartBox({
     variant === 'list' ? (depth === 0 ? 'w-52' : depth === 1 ? 'w-[176px]' : 'w-[144px]') : 'w-52';
   const skin = fam
     ? `border-slate-200 border-l-4 ${fam.bar} bg-white`
-    : node.level === 0
-      ? 'border-brand-700 bg-brand-700'
-      : 'border-brand-600 bg-brand-600';
+    : person
+      ? 'border-slate-200 border-l-4 border-l-slate-400 bg-white'
+      : node.level === 0
+        ? 'border-brand-700 bg-brand-700'
+        : 'border-brand-600 bg-brand-600';
 
   const card = (
     <button
@@ -203,12 +205,16 @@ function ChartBox({
     );
   }
 
-  // Deretan kartu orang selalu disusun kolom (baris horizontal boros tempat)
-  const allPersonChildren = hasChildren && node.children.every((c) => c.kind === 'person');
+  // Susun kolom bila: cabang departemen banyak, ATAU isinya daftar orang
+  // (baris horizontal boros tempat). Beberapa kartu orang di samping cabang
+  // departemen yang sedikit tetap boleh sebaris.
+  const personChildCount = node.children.length - subCount;
   const useColumns =
     hasChildren &&
     !isCollapsed &&
-    (node.children.length > COLUMN_THRESHOLD || (allPersonChildren && node.children.length > 2));
+    (subCount > COLUMN_THRESHOLD ||
+      (subCount === 0 && personChildCount > 2) ||
+      (personChildCount > 3 && node.children.length > COLUMN_THRESHOLD));
 
   return (
     <li>

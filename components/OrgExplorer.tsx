@@ -23,8 +23,9 @@ import type { DeptNode, OrgErrorResponse, OrgResponse } from '@/lib/types';
 
 type ViewMode = 'chart' | 'list';
 
-/** Kunci localStorage untuk mengingat susunan buka/tutup bagan antar-kunjungan */
-const COLLAPSED_STORAGE_KEY = 'onda-org-chart:collapsed';
+/** Kunci localStorage untuk mengingat susunan buka/tutup bagan antar-kunjungan.
+ *  Naikkan versi bila struktur node bagan berubah (simpanan lama diabaikan). */
+const COLLAPSED_STORAGE_KEY = 'onda-org-chart:collapsed:v2';
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; error: string; hint?: string; code?: number | string }
@@ -135,7 +136,9 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
         // Simpanan korup → pakai default
       }
       if (!nextCollapsed) {
-        nextCollapsed = new Set(idsFromLevel(json.root, Math.max(1, deptLevel - 1)));
+        // Default ringkas dihitung dari pohon bagan (termasuk node orang),
+        // supaya departemen yang hanya punya anggota pun ikut tertutup
+        nextCollapsed = new Set(idsFromLevel(buildDeptChart(json.root), 1));
       }
 
       // Jalur node yang sedang dipilih tetap dibuka supaya seleksi tidak
@@ -195,10 +198,14 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     [root, scopeId],
   );
 
-  /** Pohon yang dirender bagan: seluruh organisasi, atau satu departemen */
+  /**
+   * Pohon yang dirender bagan: seluruh organisasi, atau satu departemen.
+   * Keduanya lewat buildDeptChart supaya SETIAP departemen yang punya anggota
+   * bisa diexpand untuk melihat kartu orang-orangnya.
+   */
   const chartRoot = useMemo(() => {
     if (!root) return null;
-    return scopedDept ? buildDeptChart(scopedDept) : root;
+    return buildDeptChart(scopedDept ?? root);
   }, [root, scopedDept]);
 
   const selectedNode = useMemo(
@@ -285,7 +292,8 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const handleScopeChange = useCallback(
     (id: string) => {
       setScopeId(id);
-      if (id && root) {
+      if (!root) return;
+      if (id) {
         // Bagan departemen dibuka penuh: batalkan collapse untuk subtree-nya
         const dept = findNode(root, id);
         if (dept) {
@@ -296,6 +304,9 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           });
           setSelectedId(id);
         }
+      } else {
+        // Kembali ke "Seluruh organisasi" selalu mulai dari tampilan ringkas
+        setCollapsed(new Set(idsFromLevel(buildDeptChart(root), 1)));
       }
     },
     [root],
@@ -482,11 +493,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (!root) return;
-                  if (scopeId && chartRoot) setCollapsed(new Set(idsFromLevel(chartRoot, 1)));
-                  else setCollapsed(new Set(idsFromLevel(root, Math.max(1, deptLevel - 1))));
-                }}
+                onClick={() => chartRoot && setCollapsed(new Set(idsFromLevel(chartRoot, 1)))}
                 className="ml-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
               >
                 Tutup semua
