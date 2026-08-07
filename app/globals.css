@@ -1,0 +1,317 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --line: #cbd5e1;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* ---------- Scrollbar tipis ---------- */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---------- Animasi entrance ---------- */
+.anim-rise {
+  animation: rise-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-rise-1 {
+  animation-delay: 90ms;
+}
+.anim-rise-2 {
+  animation-delay: 180ms;
+}
+.anim-rise-3 {
+  animation-delay: 270ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Transisi lembut saat pindah tampilan (Bagan ↔ Daftar ↔ Pencarian) */
+.anim-fade {
+  animation: fade-in 260ms ease both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Umpan balik tekan pada semua tombol */
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise,
+  .anim-fade {
+    animation: none;
+  }
+}
+
+/* ---------- Kanvas bagan: pola titik halus ala papan desain ---------- */
+.chart-canvas {
+  background-color: #ffffff;
+  background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* ---------- Animasi kartu bagan ---------- */
+.chart-tree li {
+  animation: card-in 240ms ease both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-tree li {
+    animation: none;
+  }
+}
+
+/* ============================================================
+ *  Bagan organisasi — garis penghubung murni CSS
+ *
+ *  Dua mode layout:
+ *  1. .tree-row   → pohon klasik atas-bawah (jalur governance & baris kecil)
+ *  2. .dept-columns + .hang-list → kolom berisi daftar gantung,
+ *     dipakai saat satu induk punya banyak anak (departemen inti)
+ * ========================================================== */
+
+/* ---------- 1. Baris pohon klasik ---------- */
+
+ul.tree-row {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 0 0;
+  margin: 0;
+}
+
+ul.tree-row.tree-row--root {
+  padding-top: 0;
+}
+
+/* Garis turun dari kotak induk ke baris anak */
+ul.tree-row:not(.tree-row--root)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 24px;
+  border-left: 2px solid var(--line);
+}
+
+ul.tree-row > li {
+  position: relative;
+  list-style: none;
+  padding: 24px 8px 0 8px;
+  text-align: center;
+}
+
+/* Setengah garis horizontal kiri + kanan di atas tiap node */
+ul.tree-row > li::before,
+ul.tree-row > li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: 24px;
+  border-top: 2px solid var(--line);
+}
+
+ul.tree-row > li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid var(--line);
+}
+
+/* Anak tunggal: cukup garis lurus dari induk */
+ul.tree-row > li:only-child::before,
+ul.tree-row > li:only-child::after {
+  display: none;
+}
+ul.tree-row > li:only-child {
+  padding-top: 0;
+}
+
+/* Ujung kiri & kanan tidak perlu garis menggantung */
+ul.tree-row > li:first-child::before,
+ul.tree-row > li:last-child::after {
+  border: 0 none;
+}
+ul.tree-row > li:last-child::before {
+  border-right: 2px solid var(--line);
+  border-radius: 0 6px 0 0;
+}
+ul.tree-row > li:first-child::after {
+  border-radius: 6px 0 0 0;
+}
+
+/* ---------- 2. Kolom departemen ---------- */
+
+.dept-columns {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+
+/* Garis turun dari kartu induk (Direksi) ke garis bus horizontal */
+.dept-columns::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 24px;
+  border-left: 2px solid var(--line);
+}
+
+.dept-cols-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+/* Bus horizontal: dari rel kolom pertama sampai rel kolom terakhir */
+.dept-cols-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 228px; /* = lebar .dept-col → berhenti tepat di rel kolom terakhir */
+  border-top: 2px solid var(--line);
+}
+
+.dept-col {
+  width: 228px;
+  flex: none;
+}
+
+/* ---------- Daftar gantung di dalam kolom ---------- */
+
+ul.hang-list {
+  margin: 0;
+  padding: 0;
+}
+
+.hang-list li {
+  position: relative;
+  list-style: none;
+  padding: 10px 0 0 20px;
+  text-align: left;
+}
+
+/* Rel vertikal di sisi kiri */
+.hang-list li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 2px solid var(--line);
+}
+
+/* Item terakhir: rel berhenti di siku */
+.hang-list li:last-child::before {
+  bottom: auto;
+  height: 30px;
+}
+
+/* Siku horizontal dari rel ke kartu */
+.hang-list li::after {
+  content: '';
+  position: absolute;
+  top: 30px;
+  left: 0;
+  width: 20px;
+  border-top: 2px solid var(--line);
+}
+
+/* Sub-departemen: menjorok ke dalam di bawah kartu induknya */
+ul.hang-list ul.hang-sub {
+  margin-left: 12px;
+  padding: 0;
+}
+
+/* ---------- Print ---------- */
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    @apply bg-white;
+  }
+  .print-full {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* Wrapper ber-tinggi viewport harus dilepas agar konten terpaginasi penuh */
+  .print-h-auto {
+    height: auto !important;
+  }
+  /* Kertas bersih: tanpa pola titik dan tanpa animasi */
+  .chart-canvas {
+    background-image: none !important;
+  }
+  .chart-tree li {
+    animation: none !important;
+  }
+}
