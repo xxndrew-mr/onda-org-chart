@@ -189,8 +189,18 @@ export async function buildOrgTree(): Promise<{
     parent.children.push(node);
   }
 
-  // 7. Susun ulang: Commissioner → Direksi → departemen inti
-  const { direksi, commissioner } = restructureGovernance(root);
+  // 7. Susun ulang Commissioner → Direksi → departemen inti HANYA bila data
+  //    Lark masih flat (semua departemen sejajar; kedalaman maks 2: root →
+  //    departemen → sub). Kalau hierarki sudah dikelola langsung di Lark
+  //    (nesting lebih dalam), tampilkan apa adanya tanpa dipaksa.
+  const treeDepth = (node: DeptNode): number =>
+    node.children.length === 0 ? 0 : 1 + Math.max(...node.children.map(treeDepth));
+  const larkStillFlat = treeDepth(root) <= 2;
+
+  const governance: { direksi?: DeptNode; commissioner?: DeptNode } = larkStillFlat
+    ? restructureGovernance(root)
+    : {};
+  const { direksi, commissioner } = governance;
 
   // 8. Hitung level, path, headcount, dan urutkan anak-anaknya
   const seen = new Set<string>();

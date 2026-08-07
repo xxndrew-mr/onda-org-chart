@@ -72,10 +72,10 @@ components/
 2. `GET /contact/v3/departments/{root}/children?fetch_child=true` → semua departemen sekaligus, rekursif
 3. Untuk tiap departemen, `GET /contact/v3/users/find_by_department` → anggota langsung (maks 5 request paralel)
 4. Departemen + user disusun jadi pohon; headcount dihitung rekursif ke atas
-5. **Restruktur governance** — di Lark semua departemen sejajar di bawah root. Server menyusun ulang jadi
-   root → *Commissioner* → *Direksi* → departemen inti (deteksi berdasarkan nama departemen; departemen yang
-   namanya mengandung "Commissioner/Komisaris" tetap menggantung di bawah Commissioner). Kalau tidak ada
-   departemen bernama "Direksi", struktur dibiarkan apa adanya
+5. **Restruktur governance (hanya untuk data flat)** — kalau di Lark semua departemen masih sejajar di bawah
+   root (kedalaman ≤ 2), server menyusun ulang jadi root → *Commissioner* → *Direksi* → departemen inti
+   (deteksi berdasarkan nama departemen). Kalau hierarki sudah dikelola langsung di Lark (nesting lebih
+   dalam), struktur ditampilkan **apa adanya** tanpa diubah
 6. Tiap keluarga departemen diberi indeks warna (`colorIndex`) yang diwariskan ke seluruh sub-nya —
    dipakai bagan & sidebar untuk membedakan departemen. Palet ada di `lib/colors.ts`
 7. Hasilnya di-cache di memori, lalu dikirim ke browser sebagai satu JSON
