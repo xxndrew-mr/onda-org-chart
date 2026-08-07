@@ -17,7 +17,15 @@ export default function HeroBackground() {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    // WebGL bisa tidak tersedia (laptop kantor dengan hardware acceleration
+    // mati, kebijakan enterprise, remote desktop, GPU lama). Latar ini murni
+    // dekoratif — kalau gagal, lewati saja tanpa merusak aplikasi.
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    } catch {
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mount.appendChild(renderer.domElement);
 
@@ -71,23 +79,36 @@ export default function HeroBackground() {
 
     let raf = 0;
     let t = 0;
+    let stopped = false;
     const render = () => {
-      t += 0.012;
-      const pos = geometry.attributes.position as THREE.BufferAttribute;
-      for (let p = 0; p < COLS * ROWS; p++) {
-        const x = pos.getX(p);
-        const z = pos.getZ(p);
-        pos.setY(p, Math.sin(x * 0.5 + t) * 0.4 + Math.cos(z * 0.45 + t * 0.75) * 0.35);
+      if (stopped) return;
+      try {
+        t += 0.012;
+        const pos = geometry.attributes.position as THREE.BufferAttribute;
+        for (let p = 0; p < COLS * ROWS; p++) {
+          const x = pos.getX(p);
+          const z = pos.getZ(p);
+          pos.setY(p, Math.sin(x * 0.5 + t) * 0.4 + Math.cos(z * 0.45 + t * 0.75) * 0.35);
+        }
+        pos.needsUpdate = true;
+
+        // Parallax lembut ke arah kursor
+        points.rotation.y += (pointer.x * 0.18 - points.rotation.y) * 0.04;
+        points.rotation.x += (pointer.y * 0.1 - points.rotation.x) * 0.04;
+
+        renderer.render(scene, camera);
+      } catch {
+        // Render gagal (mis. context hilang) — hentikan animasi, biarkan app jalan
+        stopped = true;
+        return;
       }
-      pos.needsUpdate = true;
-
-      // Parallax lembut ke arah kursor
-      points.rotation.y += (pointer.x * 0.18 - points.rotation.y) * 0.04;
-      points.rotation.x += (pointer.y * 0.1 - points.rotation.x) * 0.04;
-
-      renderer.render(scene, camera);
       if (!reducedMotion) raf = requestAnimationFrame(render);
     };
+    // Context WebGL bisa dicabut OS/driver kapan saja — berhenti dengan anggun
+    renderer.domElement.addEventListener('webglcontextlost', () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+    });
     render();
 
     return () => {
