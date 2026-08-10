@@ -149,6 +149,16 @@ ul.tree-row.tree-row--root {
   padding-top: 0;
 }
 
+/* Baris paling atas (tanpa induk): tidak perlu garis penghubung apa pun,
+   berlaku juga saat kartu root disembunyikan dan anak-anak jadi baris teratas */
+ul.tree-row--root > li::before,
+ul.tree-row--root > li::after {
+  display: none;
+}
+ul.tree-row--root > li {
+  padding-top: 0;
+}
+
 /* Garis turun dari kotak induk ke baris anak */
 ul.tree-row:not(.tree-row--root)::before {
   content: '';

@@ -278,6 +278,8 @@ interface ChartViewProps {
   onEffectiveZoom: (zoom: number) => void;
   /** Dipanggil saat Ctrl+scroll di kanvas: +0.1 (zoom in) / −0.1 (zoom out) */
   onZoomStep: (delta: number) => void;
+  /** true = kartu root disembunyikan; anak-anaknya jadi baris teratas */
+  hideRoot?: boolean;
 }
 
 /** Lebar cetak yang tersedia: A4 landscape dengan margin 10mm ≈ 1040px CSS */
@@ -293,6 +295,7 @@ export default function ChartView({
   fitMode,
   onEffectiveZoom,
   onZoomStep,
+  hideRoot = false,
 }: ChartViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const treeRef = useRef<HTMLDivElement>(null);
@@ -431,14 +434,28 @@ export default function ChartView({
           margin juga mencegah stretch, jadi lebar alami tetap terukur. */}
       <div ref={treeRef} className="chart-tree mx-auto my-auto inline-block min-w-full">
         <ul className="tree-row tree-row--root">
-          <ChartBox
-            node={root}
-            collapsed={collapsed}
-            onToggle={onToggle}
-            onSelect={onSelect}
-            selectedId={selectedId}
-            variant="tree"
-          />
+          {hideRoot ? (
+            root.children.map((child) => (
+              <ChartBox
+                key={child.id}
+                node={child}
+                collapsed={collapsed}
+                onToggle={onToggle}
+                onSelect={onSelect}
+                selectedId={selectedId}
+                variant="tree"
+              />
+            ))
+          ) : (
+            <ChartBox
+              node={root}
+              collapsed={collapsed}
+              onToggle={onToggle}
+              onSelect={onSelect}
+              selectedId={selectedId}
+              variant="tree"
+            />
+          )}
         </ul>
       </div>
     </div>

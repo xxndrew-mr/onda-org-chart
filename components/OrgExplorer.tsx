@@ -637,6 +637,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                 fitMode={fitMode}
                 onEffectiveZoom={setZoom}
                 onZoomStep={handleZoomStep}
+                hideRoot={!scopeId}
               />
             </div>
           </div>
