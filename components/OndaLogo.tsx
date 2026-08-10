@@ -1,0 +1,27 @@
+/**
+ * Logo Onda: tetes air biru dengan kilau, ditopang dua daun hijau.
+ * Rekreasi vektor dari logo resmi — tajam di semua ukuran.
+ * Kalau ingin memakai file logo asli, simpan sebagai public/logo.png lalu
+ * ganti pemakaian <OndaLogo /> dengan <img src="/logo.png" alt="" />.
+ */
+export default function OndaLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 512 460" className={className} aria-hidden focusable="false">
+      {/* Daun hijau kiri & kanan */}
+      <g fill="#8bc53f">
+        <path d="M98 205 C76 262 82 340 130 390 C168 428 216 438 250 432 C198 398 158 352 140 296 C128 258 112 228 98 205 Z" />
+        <path d="M414 205 C436 262 430 340 382 390 C344 428 296 438 262 432 C314 398 354 352 372 296 C384 258 400 228 414 205 Z" />
+      </g>
+      {/* Tetes air */}
+      <path
+        fill="#1b6cb5"
+        d="M256 30 C226 92 151 170 151 252 A105 105 0 0 0 361 252 C361 170 286 92 256 30 Z"
+      />
+      {/* Kilau putih */}
+      <path
+        fill="#ffffff"
+        d="M202 182 C180 222 176 280 200 320 C212 334 220 326 212 312 C192 278 196 224 212 190 C218 178 208 172 202 182 Z"
+      />
+    </svg>
+  );
+}

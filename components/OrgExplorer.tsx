@@ -6,6 +6,7 @@ import ChartView from './ChartView';
 import DeptTree from './DeptTree';
 import DetailPanel from './DetailPanel';
 import HeroBackground from './HeroBackground';
+import OndaLogo from './OndaLogo';
 import SearchResults from './SearchResults';
 import { familyColor } from '@/lib/colors';
 import {
@@ -372,16 +373,21 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           className="pointer-events-none absolute -top-28 right-[15%] h-72 w-72 rounded-full bg-white/10 blur-3xl"
         />
         <div className="relative mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
-          <div className="anim-rise">
-            <h1 className="text-2xl font-bold tracking-tight">{data.root.name || orgName}</h1>
-            <p className="mt-0.5 text-xs text-brand-100">
-              Struktur organisasi · sinkron dari Lark ·{' '}
-              {new Date(data.generatedAt).toLocaleString('id-ID', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
-              {data.cached && ' (cache)'}
-            </p>
+          <div className="anim-rise flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm">
+              <OndaLogo className="h-full w-full" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{data.root.name || orgName}</h1>
+              <p className="mt-0.5 text-xs text-brand-100">
+                Struktur organisasi · sinkron dari Lark ·{' '}
+                {new Date(data.generatedAt).toLocaleString('id-ID', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+                {data.cached && ' (cache)'}
+              </p>
+            </div>
           </div>
 
           <div className="anim-rise anim-rise-1 flex flex-wrap items-center gap-2">
