@@ -100,6 +100,8 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const [scopeId, setScopeId] = useState('');
   /** Orang yang kartunya diklik di bagan — profilnya tampil di banner */
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  /** Departemen yang kartunya diklik di bagan — infonya tampil di banner */
+  const [bannerDeptId, setBannerDeptId] = useState<string | null>(null);
   /** Drawer menu mobile (presentasi saja) */
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -163,7 +165,9 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
       } else {
         // Kunjungan awal: langsung buka bagan PT Onda Mega Integra 4 lapis
         // (dicari berdasarkan nama supaya tahan terhadap perubahan id di Lark)
-        const target = json.root.children.find((c) => /onda\s*mega\s*integra/i.test(c.name));
+        const target = flattenDepartments(json.root).find((c) =>
+          /onda\s*mega\s*integra/i.test(c.name),
+        );
         if (target) {
           const scopedTree = buildDeptChart(target);
           for (const id of allDeptIds(target)) nextCollapsed.delete(id);
@@ -224,6 +228,12 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const selectedPersonDept = useMemo(
     () => (root && selectedPerson ? findNode(root, selectedPerson.departmentId) : null),
     [root, selectedPerson],
+  );
+
+  /** Departemen yang diklik di bagan (untuk banner info departemen) */
+  const bannerDept = useMemo(
+    () => (root && bannerDeptId ? findNode(root, bannerDeptId) : null),
+    [root, bannerDeptId],
   );
 
   /**
@@ -305,6 +315,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     (id: string) => {
       setSelectedId(id);
       setSelectedPerson(null);
+      setBannerDeptId(id);
       if (root) {
         const chain = pathToNode(root, id);
         setExpanded((prev) => new Set([...Array.from(prev), ...chain]));
@@ -315,6 +326,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
   const handleSelectPerson = useCallback((person: Person) => {
     setSelectedPerson(person);
+    setBannerDeptId(null);
   }, []);
 
   const handleZoomStep = useCallback((delta: number) => {
@@ -326,6 +338,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     (id: string) => {
       setScopeId(id);
       setSelectedPerson(null);
+      setBannerDeptId(null);
       if (!root) return;
       if (id) {
         // Bagan departemen dibuka default 4 lapis: level 0-2 terbuka,
@@ -719,7 +732,78 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
               </div>
             )}
 
-            {!selectedPerson && scopedDept && (
+            {/* Banner info departemen — muncul saat kartu departemen diklik */}
+            {!selectedPerson && bannerDept && bannerDept.id !== scopeId && (
+              <div
+                key={bannerDept.id}
+                className={`anim-fade panel flex flex-wrap items-center gap-x-5 gap-y-2 border-l-[3px] px-4 py-2.5 ${
+                  familyColor(bannerDept.colorIndex)?.bar ?? 'border-l-blue'
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted"
+                    title={bannerDept.path.slice(1).join(' / ')}
+                  >
+                    Departemen
+                    {bannerDept.path.length > 2 && <> · {bannerDept.path.slice(1, -1).join(' / ')}</>}
+                  </p>
+                  <h2 className="truncate font-display text-base font-bold leading-tight tracking-[-0.02em] text-ink">
+                    {bannerDept.name}
+                  </h2>
+                </div>
+
+                {bannerDept.leader && (
+                  <div className="flex items-center gap-2">
+                    <Avatar
+                      name={bannerDept.leader.name}
+                      src={bannerDept.leader.avatar}
+                      size={34}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
+                        Kepala
+                      </p>
+                      <p className="truncate text-sm font-medium text-ink">
+                        {bannerDept.leader.name}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  <span className="badge badge-blue">{bannerDept.totalHeadcount} orang</span>
+                  {bannerDept.totalSubDepartments > 0 && (
+                    <span className="badge">{bannerDept.totalSubDepartments} sub-departemen</span>
+                  )}
+                  {bannerDept.leader?.email && (
+                    <a
+                      href={`mailto:${bannerDept.leader.email}`}
+                      className="badge max-w-[200px] truncate normal-case hover:underline"
+                    >
+                      {bannerDept.leader.email}
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleScopeChange(bannerDept.id)}
+                    className="pill no-print h-8"
+                  >
+                    Lihat bagan <span className="arrow">↗</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerDeptId(null)}
+                    aria-label="Tutup info departemen"
+                    className="pill no-print h-7 w-7 p-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!selectedPerson && !(bannerDept && bannerDept.id !== scopeId) && scopedDept && (
               <div
                 className={`panel flex flex-wrap items-center gap-x-6 gap-y-2 border-l-[3px] px-5 py-3 ${
                   familyColor(scopedDept.colorIndex)?.bar ?? 'border-l-blue'
