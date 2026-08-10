@@ -150,6 +150,17 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           nextExpanded.add(id);
           nextCollapsed.delete(id);
         }
+      } else {
+        // Kunjungan awal: langsung buka bagan PT Onda Mega Integra 4 lapis
+        // (dicari berdasarkan nama supaya tahan terhadap perubahan id di Lark)
+        const target = json.root.children.find((c) => /onda\s*mega\s*integra/i.test(c.name));
+        if (target) {
+          const scopedTree = buildDeptChart(target);
+          for (const id of allDeptIds(target)) nextCollapsed.delete(id);
+          for (const id of idsFromLevel(scopedTree, 3)) nextCollapsed.add(id);
+          setScopeId(target.id);
+          setSelectedId(target.id);
+        }
       }
       setExpanded(nextExpanded);
       setCollapsed(nextCollapsed);
