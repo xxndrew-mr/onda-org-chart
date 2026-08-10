@@ -600,19 +600,26 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
             {selectedPerson && (
               <div
                 key={`${selectedPerson.id}:${selectedPerson.departmentId}`}
-                className={`anim-fade flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 border-l-4 bg-white px-5 py-3 shadow-sm ${
+                className={`anim-fade flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200 border-l-4 bg-white px-4 py-2.5 shadow-sm ${
                   familyColor(selectedPersonDept?.colorIndex)?.bar ?? 'border-l-brand-600'
                 }`}
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar name={selectedPerson.name} src={selectedPerson.avatar} size={44} />
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Avatar name={selectedPerson.name} src={selectedPerson.avatar} size={38} />
                   <div className="min-w-0">
-                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                    {/* Path lengkap terlalu panjang untuk banner — cukup entitas
+                        induknya; jalur penuh tersedia sebagai tooltip */}
+                    <p
+                      className="truncate text-[10px] uppercase tracking-wide text-slate-400"
+                      title={selectedPersonDept?.path.slice(1).join(' / ')}
+                    >
                       Profil Karyawan
-                      {selectedPersonDept && ` · ${selectedPersonDept.path.slice(1).join(' / ')}`}
+                      {selectedPersonDept && selectedPersonDept.path.length > 1 && (
+                        <> · {selectedPersonDept.path[1]}</>
+                      )}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <h2 className="truncate text-lg font-bold text-slate-900">
+                    <div className="flex min-w-0 items-baseline gap-2">
+                      <h2 className="truncate text-base font-bold leading-tight text-slate-900">
                         {selectedPerson.name}
                       </h2>
                       {selectedPerson.isLeader && (
@@ -620,25 +627,30 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                           Head
                         </span>
                       )}
+                      {selectedPerson.enName &&
+                        selectedPerson.enName.trim().toLowerCase() !==
+                          selectedPerson.name.trim().toLowerCase() && (
+                          <span className="hidden truncate text-xs text-slate-400 sm:inline">
+                            ({selectedPerson.enName})
+                          </span>
+                        )}
                     </div>
-                    {selectedPerson.enName && (
-                      <p className="truncate text-xs text-slate-500">{selectedPerson.enName}</p>
-                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
                   {selectedPerson.jobTitle && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                    <span className="max-w-[200px] truncate rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
                       {selectedPerson.jobTitle}
                     </span>
                   )}
                   {selectedPersonDept && (
                     <span
-                      className={`rounded-full px-2.5 py-1 font-semibold ${
+                      className={`max-w-[220px] truncate rounded-full px-2.5 py-1 font-semibold ${
                         familyColor(selectedPersonDept.colorIndex)?.chip ??
                         'bg-slate-100 text-slate-600'
                       }`}
+                      title={selectedPersonDept.path.slice(1).join(' / ')}
                     >
                       {selectedPersonDept.name}
                     </span>
@@ -646,7 +658,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                   {selectedPerson.email && (
                     <a
                       href={`mailto:${selectedPerson.email}`}
-                      className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-brand-600 hover:bg-brand-50 hover:underline"
+                      className="max-w-[220px] truncate rounded-full bg-brand-50 px-2.5 py-1 font-medium text-brand-700 hover:bg-brand-100 hover:underline"
                     >
                       {selectedPerson.email}
                     </a>
@@ -661,15 +673,15 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                       {selectedPerson.city}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPerson(null)}
+                    aria-label="Tutup profil"
+                    className="no-print ml-1 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                  >
+                    ✕
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedPerson(null)}
-                  className="no-print ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-                >
-                  ✕ Tutup
-                </button>
               </div>
             )}
 
