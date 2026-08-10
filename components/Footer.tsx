@@ -1,0 +1,41 @@
+// Ikon LinkedIn inline (tanpa dependensi ikon eksternal).
+function LinkedinIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z" />
+    </svg>
+  );
+}
+
+export default function Footer() {
+  // Kredit "Andre" tersembunyi — muncul melebar saat kursor mengarah ke footer
+  // (atau saat tautannya difokus via keyboard, agar tetap aksesibel).
+  return (
+    <footer className="no-print group cursor-default bg-[#005DA6]">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-center gap-0 px-4 py-4 transition-all duration-300 group-hover:gap-3 sm:px-6">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/85">
+          © {new Date().getFullYear()} — PT Onda Mega Integra
+        </span>
+
+        <div className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 ease-in-out group-focus-within:max-w-[340px] group-focus-within:opacity-100 group-hover:max-w-[340px] group-hover:opacity-100">
+          <a
+            href="https://www.linkedin.com/in/andre-marshandito/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 pl-1 font-mono text-[11px] uppercase tracking-[0.14em] text-white/75 transition-colors hover:text-white"
+          >
+            <span>— Created by Andre Marshandito</span>
+            <LinkedinIcon size={14} className="transition-transform group-hover:-translate-y-0.5" />
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+}

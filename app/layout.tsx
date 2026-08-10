@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Space_Grotesk, Space_Mono } from 'next/font/google';
+import Footer from '@/components/Footer';
 import SmoothScroll from '@/components/SmoothScroll';
 import './globals.css';
 
@@ -42,7 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={`${display.variable} ${body.variable} ${mono.variable} min-h-screen bg-paper font-sans text-ink`}
       >
-        <SmoothScroll>{children}</SmoothScroll>
+        <SmoothScroll>
+          {children}
+          <Footer />
+        </SmoothScroll>
       </body>
     </html>
   );
