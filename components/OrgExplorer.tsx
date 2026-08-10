@@ -295,12 +295,15 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
       setScopeId(id);
       if (!root) return;
       if (id) {
-        // Bagan departemen dibuka penuh: batalkan collapse untuk subtree-nya
+        // Bagan departemen dibuka default 4 lapis: level 0-2 terbuka,
+        // level 3 terlihat tapi tertutup (bisa diexpand manual)
         const dept = findNode(root, id);
         if (dept) {
+          const scopedTree = buildDeptChart(dept);
           setCollapsed((prev) => {
             const next = new Set(prev);
             for (const deptId of allDeptIds(dept)) next.delete(deptId);
+            for (const collapsedId of idsFromLevel(scopedTree, 3)) next.add(collapsedId);
             return next;
           });
           setSelectedId(id);
