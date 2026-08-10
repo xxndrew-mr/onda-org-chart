@@ -20,7 +20,7 @@ import {
   normalize,
   pathToNode,
 } from '@/lib/tree-utils';
-import type { DeptNode, OrgErrorResponse, OrgResponse } from '@/lib/types';
+import type { DeptNode, OrgErrorResponse, OrgResponse, Person } from '@/lib/types';
 
 type ViewMode = 'chart' | 'list';
 
@@ -95,6 +95,8 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const [fitMode, setFitMode] = useState(true);
   /** '' = bagan seluruh organisasi; selain itu = id departemen yang dibagankan */
   const [scopeId, setScopeId] = useState('');
+  /** Orang yang kartunya diklik di bagan — profilnya tampil di banner */
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
   const selectedIdRef = useRef('');
   useEffect(() => {
@@ -210,6 +212,12 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     [root, scopeId],
   );
 
+  /** Departemen tempat orang yang sedang dipilih (untuk banner profil) */
+  const selectedPersonDept = useMemo(
+    () => (root && selectedPerson ? findNode(root, selectedPerson.departmentId) : null),
+    [root, selectedPerson],
+  );
+
   /**
    * Pohon yang dirender bagan: seluruh organisasi, atau satu departemen.
    * Keduanya lewat buildDeptChart supaya SETIAP departemen yang punya anggota
@@ -288,6 +296,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const handleChartSelect = useCallback(
     (id: string) => {
       setSelectedId(id);
+      setSelectedPerson(null);
       if (root) {
         const chain = pathToNode(root, id);
         setExpanded((prev) => new Set([...Array.from(prev), ...chain]));
@@ -295,6 +304,10 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     },
     [root],
   );
+
+  const handleSelectPerson = useCallback((person: Person) => {
+    setSelectedPerson(person);
+  }, []);
 
   const handleZoomStep = useCallback((delta: number) => {
     setFitMode(false);
@@ -304,6 +317,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const handleScopeChange = useCallback(
     (id: string) => {
       setScopeId(id);
+      setSelectedPerson(null);
       if (!root) return;
       if (id) {
         // Bagan departemen dibuka default 4 lapis: level 0-2 terbuka,
@@ -583,7 +597,83 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           </div>
         ) : view === 'chart' ? (
           <div className="print-h-auto flex h-full flex-col gap-3">
-            {scopedDept && (
+            {selectedPerson && (
+              <div
+                key={`${selectedPerson.id}:${selectedPerson.departmentId}`}
+                className={`anim-fade flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 border-l-4 bg-white px-5 py-3 shadow-sm ${
+                  familyColor(selectedPersonDept?.colorIndex)?.bar ?? 'border-l-brand-600'
+                }`}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar name={selectedPerson.name} src={selectedPerson.avatar} size={44} />
+                  <div className="min-w-0">
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                      Profil Karyawan
+                      {selectedPersonDept && ` · ${selectedPersonDept.path.slice(1).join(' / ')}`}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate text-lg font-bold text-slate-900">
+                        {selectedPerson.name}
+                      </h2>
+                      {selectedPerson.isLeader && (
+                        <span className="shrink-0 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+                          Head
+                        </span>
+                      )}
+                    </div>
+                    {selectedPerson.enName && (
+                      <p className="truncate text-xs text-slate-500">{selectedPerson.enName}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {selectedPerson.jobTitle && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                      {selectedPerson.jobTitle}
+                    </span>
+                  )}
+                  {selectedPersonDept && (
+                    <span
+                      className={`rounded-full px-2.5 py-1 font-semibold ${
+                        familyColor(selectedPersonDept.colorIndex)?.chip ??
+                        'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {selectedPersonDept.name}
+                    </span>
+                  )}
+                  {selectedPerson.email && (
+                    <a
+                      href={`mailto:${selectedPerson.email}`}
+                      className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-brand-600 hover:bg-brand-50 hover:underline"
+                    >
+                      {selectedPerson.email}
+                    </a>
+                  )}
+                  {selectedPerson.employeeNo && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                      NIK {selectedPerson.employeeNo}
+                    </span>
+                  )}
+                  {selectedPerson.city && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                      {selectedPerson.city}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedPerson(null)}
+                  className="no-print ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
+                >
+                  ✕ Tutup
+                </button>
+              </div>
+            )}
+
+            {!selectedPerson && scopedDept && (
               <div
                 className={`flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 border-l-4 bg-white px-5 py-3 shadow-sm ${
                   familyColor(scopedDept.colorIndex)?.bar ?? 'border-l-brand-600'
@@ -646,7 +736,13 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                 collapsed={collapsed}
                 onToggle={toggleCollapse}
                 onSelect={handleChartSelect}
+                onSelectPerson={handleSelectPerson}
                 selectedId={selectedId}
+                selectedPersonKey={
+                  selectedPerson
+                    ? `${selectedPerson.id}:${selectedPerson.departmentId}`
+                    : undefined
+                }
                 zoom={zoom}
                 fitMode={fitMode}
                 onEffectiveZoom={setZoom}

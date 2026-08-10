@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import Avatar from './Avatar';
 import { useSmoothWheel } from './useSmoothWheel';
 import { familyColor } from '@/lib/colors';
-import type { DeptNode } from '@/lib/types';
+import type { DeptNode, Person } from '@/lib/types';
 
 /** Anak lebih banyak dari ini → susun dalam kolom, bukan satu baris melebar */
 const COLUMN_THRESHOLD = 6;
@@ -23,7 +23,11 @@ interface ChartNodeProps {
   collapsed: Set<string>;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
+  /** Dipanggil saat kartu orang diklik (profilnya tampil di banner) */
+  onSelectPerson: (person: Person) => void;
   selectedId: string;
+  /** `${person.id}:${departmentId}` orang yang sedang dipilih (untuk ring) */
+  selectedPersonKey?: string;
   variant: Variant;
   depth?: number;
 }
@@ -76,18 +80,22 @@ function ChartBox({
   collapsed,
   onToggle,
   onSelect,
+  onSelectPerson,
   selectedId,
+  selectedPersonKey,
   variant,
   depth = 0,
 }: ChartNodeProps) {
   const isCollapsed = collapsed.has(node.id);
   const hasChildren = node.children.length > 0;
-  const isSelected = selectedId === node.id;
 
   const fam = familyColor(node.colorIndex);
   // Tanpa warna keluarga = jalur governance (root / Commissioner / Direksi)
   const solid = !fam;
   const person = node.kind === 'person' ? node.members[0] : undefined;
+  const isSelected = person
+    ? selectedPersonKey === `${person.id}:${person.departmentId}`
+    : selectedId === node.id;
   // Pada bagan per departemen, anak bisa berupa kartu orang — jangan ikut
   // dihitung sebagai "sub" departemen
   const subCount = node.children.filter((c) => c.kind !== 'person').length;
@@ -105,7 +113,7 @@ function ChartBox({
   const card = (
     <button
       type="button"
-      onClick={() => onSelect(person ? person.departmentId : node.id)}
+      onClick={() => (person ? onSelectPerson(person) : onSelect(node.id))}
       className={`${width} rounded-xl border ${skin} ${person ? 'px-3 py-2' : 'px-3 py-2.5'} text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg ${
         isSelected ? 'ring-2 ring-brand-400 ring-offset-2' : ''
       }`}
@@ -194,7 +202,9 @@ function ChartBox({
                 collapsed={collapsed}
                 onToggle={onToggle}
                 onSelect={onSelect}
+                onSelectPerson={onSelectPerson}
                 selectedId={selectedId}
+                selectedPersonKey={selectedPersonKey}
                 variant="list"
                 depth={depth + 1}
               />
@@ -237,7 +247,9 @@ function ChartBox({
                       collapsed={collapsed}
                       onToggle={onToggle}
                       onSelect={onSelect}
+                      onSelectPerson={onSelectPerson}
                       selectedId={selectedId}
+                      selectedPersonKey={selectedPersonKey}
                       variant="list"
                       depth={0}
                     />
@@ -255,7 +267,9 @@ function ChartBox({
                 collapsed={collapsed}
                 onToggle={onToggle}
                 onSelect={onSelect}
+                onSelectPerson={onSelectPerson}
                 selectedId={selectedId}
+                selectedPersonKey={selectedPersonKey}
                 variant="tree"
               />
             ))}
@@ -270,7 +284,9 @@ interface ChartViewProps {
   collapsed: Set<string>;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
+  onSelectPerson: (person: Person) => void;
   selectedId: string;
+  selectedPersonKey?: string;
   zoom: number;
   /** true = zoom otomatis dihitung supaya bagan pas selebar kontainer */
   fitMode: boolean;
@@ -290,7 +306,9 @@ export default function ChartView({
   collapsed,
   onToggle,
   onSelect,
+  onSelectPerson,
   selectedId,
+  selectedPersonKey,
   zoom,
   fitMode,
   onEffectiveZoom,
@@ -442,7 +460,9 @@ export default function ChartView({
                 collapsed={collapsed}
                 onToggle={onToggle}
                 onSelect={onSelect}
+                onSelectPerson={onSelectPerson}
                 selectedId={selectedId}
+                selectedPersonKey={selectedPersonKey}
                 variant="tree"
               />
             ))
@@ -452,7 +472,9 @@ export default function ChartView({
               collapsed={collapsed}
               onToggle={onToggle}
               onSelect={onSelect}
+              onSelectPerson={onSelectPerson}
               selectedId={selectedId}
+              selectedPersonKey={selectedPersonKey}
               variant="tree"
             />
           )}
