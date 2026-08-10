@@ -42,7 +42,7 @@ export default function DeptTree({
     <div>
       <div
         className={`group flex items-center gap-1 rounded-lg pr-2 text-sm transition ${
-          isSelected ? 'bg-brand-50 text-brand-800' : 'hover:bg-slate-100'
+          isSelected ? 'bg-blue-wash text-blue-ink' : 'hover:bg-mist'
         }`}
         style={{ paddingLeft: depth * 14 + 4 }}
       >
@@ -50,7 +50,7 @@ export default function DeptTree({
           type="button"
           onClick={() => hasChildren && onToggle(node.id)}
           className={`flex h-6 w-5 items-center justify-center rounded ${
-            hasChildren ? 'text-slate-400 hover:text-slate-700' : 'invisible'
+            hasChildren ? 'text-muted hover:text-ink' : 'invisible'
           }`}
           aria-label={isOpen ? 'Tutup' : 'Buka'}
           aria-expanded={hasChildren ? isOpen : undefined}
@@ -68,8 +68,8 @@ export default function DeptTree({
             <span className={`truncate ${isSelected ? 'font-semibold' : ''}`}>{node.name}</span>
           </span>
           <span
-            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${
-              isSelected ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500'
+            className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.12em] tabular-nums ${
+              isSelected ? 'bg-blue-wash text-blue-ink' : 'bg-mist text-ink-2'
             }`}
             title={`${node.totalHeadcount} orang (termasuk sub-departemen)`}
           >
@@ -79,7 +79,7 @@ export default function DeptTree({
       </div>
 
       {hasChildren && isOpen && (
-        <div className="border-l border-slate-200" style={{ marginLeft: depth * 14 + 13 }}>
+        <div className="border-l border-line" style={{ marginLeft: depth * 14 + 13 }}>
           <div style={{ marginLeft: -(depth * 14 + 13) }}>
             {node.children.map((child) => (
               <DeptTree

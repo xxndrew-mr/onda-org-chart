@@ -15,21 +15,21 @@ export default function SearchResults({ query, people, departments, onSelect }: 
   const empty = people.length === 0 && departments.length === 0;
 
   return (
-    <div className="thin-scroll h-full overflow-auto rounded-2xl border border-slate-200 bg-white p-5">
-      <p className="mb-4 text-sm text-slate-500">
-        Hasil untuk <span className="font-semibold text-slate-800">&ldquo;{query}&rdquo;</span> —{' '}
+    <div data-lenis-prevent className="thin-scroll h-full overflow-auto rounded-2xl border border-line bg-paper p-5">
+      <p className="mb-4 text-sm text-ink-2">
+        Hasil untuk <span className="font-semibold text-ink">&ldquo;{query}&rdquo;</span> —{' '}
         {departments.length} departemen, {people.length} orang
       </p>
 
       {empty && (
-        <div className="rounded-xl border border-dashed border-slate-200 px-4 py-12 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-line px-4 py-12 text-center text-sm text-muted">
           Tidak ada yang cocok. Coba kata kunci lain.
         </div>
       )}
 
       {departments.length > 0 && (
         <section className="mb-7">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <h3 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
             Departemen
           </h3>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -38,11 +38,11 @@ export default function SearchResults({ query, people, departments, onSelect }: 
                 key={dept.id}
                 type="button"
                 onClick={() => onSelect(dept.id)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-brand-300 hover:bg-brand-50/40"
+                className="rounded-xl border border-line bg-paper px-3 py-2.5 text-left transition hover:border-grid hover:bg-mist"
               >
-                <p className="truncate text-sm font-medium text-slate-800">{dept.name}</p>
-                <p className="truncate text-[11px] text-slate-400">{dept.path.join(' / ')}</p>
-                <p className="mt-0.5 text-[11px] text-slate-500">{dept.totalHeadcount} orang</p>
+                <p className="truncate text-sm font-medium text-ink">{dept.name}</p>
+                <p className="truncate text-[11px] text-muted">{dept.path.join(' / ')}</p>
+                <p className="mt-0.5 font-mono text-[10px] font-bold tracking-[0.12em] text-ink-2">{dept.totalHeadcount} orang</p>
               </button>
             ))}
           </div>
@@ -51,7 +51,7 @@ export default function SearchResults({ query, people, departments, onSelect }: 
 
       {people.length > 0 && (
         <section>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Orang</h3>
+          <h3 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Orang</h3>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {people.map((person) => (
               <button

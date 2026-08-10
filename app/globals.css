@@ -2,8 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+ *  Design tokens — editorial "paper & ink", aksen biru elektrik.
+ *  Semua warna komponen mengalir dari token ini (light/dark/print).
+ * ========================================================== */
 :root {
-  --line: #cbd5e1;
+  --paper: #ffffff;
+  --mist: #f4f6fc;
+  --ink: #0b1020;
+  --ink-2: #5a6178;
+  --muted: #9a9fb0;
+  --line: #e6e9f3;
+  --line-2: #f0f2f8;
+  --grid: #d5dbea;
+  /* Biru brand Onda */
+  --blue: #005da6;
+  --blue-ink: #00447c;
+  --blue-wash: #e8f1f8;
+  --danger: #c0392b;
+  --danger-wash: #fbedec;
+  --danger-line: #f0cfcb;
+  --ok: #0e7a3b;
+  --ok-wash: #eaf7ef;
+  --ok-line: #cde9d8;
+  --radius: 12px;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --paper: #0b0f1a;
+  --mist: #161c2b;
+  --ink: #eef1f8;
+  --ink-2: #aab2c6;
+  --muted: #7e8698;
+  --line: #242c3e;
+  --line-2: #171e2c;
+  --grid: #2c3548;
+  /* Biru brand Onda — varian terang untuk latar gelap */
+  --blue: #4da3e0;
+  --blue-ink: #8cc4ec;
+  --blue-wash: rgba(77, 163, 224, 0.16);
+  --danger: #f5766b;
+  --danger-wash: rgba(245, 118, 107, 0.14);
+  --danger-line: rgba(245, 118, 107, 0.35);
+  --ok: #56d08a;
+  --ok-wash: rgba(86, 208, 138, 0.14);
+  --ok-line: rgba(86, 208, 138, 0.35);
+  color-scheme: dark;
 }
 
 html,
@@ -12,7 +57,16 @@ body {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  background-color: var(--paper);
+  color: var(--ink);
+  @apply antialiased;
+}
+
+/* View Transitions (toggle tema): animasi default diambil alih clip-path */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 /* ---------- Scrollbar tipis ---------- */
@@ -21,30 +75,176 @@ body {
   height: 8px;
 }
 .thin-scroll::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-slate-300;
+  border-radius: 999px;
+  background: var(--grid);
 }
 .thin-scroll::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-400;
+  background: var(--muted);
 }
 .thin-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-/* Focus ring konsisten & aksesibel untuk navigasi keyboard */
+/* Focus ring keyboard yang jelas & konsisten */
 button:focus-visible,
 select:focus-visible,
-a:focus-visible {
-  outline: 2px solid #598dff;
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--blue);
   outline-offset: 2px;
+}
+
+/* ============================================================
+ *  Kelas bersama (di @layer components agar utility bisa menang)
+ * ========================================================== */
+@layer components {
+  /* Label mono biru dengan garis pendek pembuka */
+  .eyebrow {
+    @apply flex items-center gap-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em];
+    color: var(--blue);
+  }
+  .eyebrow::before {
+    content: '';
+    width: 26px;
+    height: 1px;
+    background: var(--blue);
+    flex: none;
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .hairline {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Section header bernomor: 01 — Judul ——— tag */
+  .section-num {
+    @apply font-mono text-xs font-bold tracking-[0.12em];
+    color: var(--blue);
+  }
+  .section-line {
+    flex: 1 1 0%;
+    border-top: 1px solid var(--line);
+  }
+  .section-tag {
+    @apply font-mono text-[10px] font-bold uppercase tracking-[0.14em];
+    color: var(--muted);
+  }
+
+  /* Tombol pill */
+  .pill {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition;
+    border-color: var(--line);
+    color: var(--ink-2);
+    background: var(--paper);
+  }
+  .pill:hover {
+    border-color: var(--grid);
+    color: var(--ink);
+    background: var(--mist);
+  }
+  .pill:active {
+    transform: scale(0.98);
+  }
+  .pill-primary {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: var(--paper);
+  }
+  .pill-primary:hover {
+    background: var(--blue-ink);
+    border-color: var(--blue-ink);
+    color: var(--paper);
+  }
+  .pill-danger {
+    color: var(--danger);
+    border-color: var(--danger-line);
+    background: var(--danger-wash);
+  }
+  .pill-danger:hover {
+    border-color: var(--danger);
+    background: var(--danger-wash);
+    color: var(--danger);
+  }
+  .pill .arrow {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pill:hover .arrow {
+    transform: translate(2px, -2px);
+  }
+
+  /* Input / select */
+  .field {
+    @apply h-11 w-full rounded-[10px] border px-3 text-sm outline-none transition;
+    background: var(--paper);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+  .field::placeholder {
+    color: var(--muted);
+  }
+  .field:hover {
+    border-color: var(--grid);
+  }
+  .field:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-wash);
+  }
+
+  /* Badge mono kecil */
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em];
+    border-color: var(--line);
+    color: var(--ink-2);
+    background: var(--mist);
+  }
+  .badge-blue {
+    color: var(--blue-ink);
+    background: var(--blue-wash);
+    border-color: transparent;
+  }
+  .badge-ok {
+    color: var(--ok);
+    background: var(--ok-wash);
+    border-color: var(--ok-line);
+  }
+  .badge-danger {
+    color: var(--danger);
+    background: var(--danger-wash);
+    border-color: var(--danger-line);
+  }
+
+  /* Tabel data editorial */
+  .data-table th {
+    @apply px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-[0.14em];
+    color: var(--muted);
+  }
+  .data-table td {
+    @apply px-3 py-2 text-sm tabular-nums;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Reveal-on-scroll (dipasangkan lewat hook useReveal) */
+  .reveal {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 
 /* ---------- Animasi entrance ---------- */
 .anim-rise {
-  animation: rise-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .anim-rise-1 {
   animation-delay: 90ms;
@@ -59,7 +259,7 @@ a:focus-visible {
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -67,9 +267,8 @@ a:focus-visible {
   }
 }
 
-/* Transisi lembut saat pindah tampilan (Bagan ↔ Daftar ↔ Pencarian) */
 .anim-fade {
-  animation: fade-in 260ms ease both;
+  animation: fade-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fade-in {
@@ -83,7 +282,6 @@ a:focus-visible {
   }
 }
 
-/* Umpan balik tekan pada semua tombol */
 @media (prefers-reduced-motion: no-preference) {
   button:not(:disabled):active {
     transform: scale(0.97);
@@ -92,21 +290,26 @@ a:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .anim-rise,
-  .anim-fade {
-    animation: none;
+  .anim-fade,
+  .chart-tree li {
+    animation: none !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
   }
 }
 
-/* ---------- Kanvas bagan: pola titik halus ala papan desain ---------- */
+/* ---------- Kanvas bagan: kertas dengan titik grid halus ---------- */
 .chart-canvas {
-  background-color: #ffffff;
-  background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-color: var(--paper);
+  background-image: radial-gradient(circle, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* ---------- Animasi kartu bagan ---------- */
 .chart-tree li {
-  animation: card-in 240ms ease both;
+  animation: card-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes card-in {
@@ -120,22 +323,13 @@ a:focus-visible {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .chart-tree li {
-    animation: none;
-  }
-}
-
 /* ============================================================
- *  Bagan organisasi — garis penghubung murni CSS
+ *  Bagan organisasi — garis penghubung hairline murni CSS
  *
  *  Dua mode layout:
- *  1. .tree-row   → pohon klasik atas-bawah (jalur governance & baris kecil)
- *  2. .dept-columns + .hang-list → kolom berisi daftar gantung,
- *     dipakai saat satu induk punya banyak anak (departemen inti)
+ *  1. .tree-row   → pohon klasik atas-bawah
+ *  2. .dept-columns + .hang-list → kolom berisi daftar gantung
  * ========================================================== */
-
-/* ---------- 1. Baris pohon klasik ---------- */
 
 ul.tree-row {
   position: relative;
@@ -149,8 +343,7 @@ ul.tree-row.tree-row--root {
   padding-top: 0;
 }
 
-/* Baris paling atas (tanpa induk): tidak perlu garis penghubung apa pun,
-   berlaku juga saat kartu root disembunyikan dan anak-anak jadi baris teratas */
+/* Baris paling atas (tanpa induk): tidak perlu garis penghubung apa pun */
 ul.tree-row--root > li::before,
 ul.tree-row--root > li::after {
   display: none;
@@ -167,7 +360,7 @@ ul.tree-row:not(.tree-row--root)::before {
   left: 50%;
   width: 0;
   height: 24px;
-  border-left: 2px solid var(--line);
+  border-left: 1px solid var(--grid);
 }
 
 ul.tree-row > li {
@@ -186,13 +379,13 @@ ul.tree-row > li::after {
   right: 50%;
   width: 50%;
   height: 24px;
-  border-top: 2px solid var(--line);
+  border-top: 1px solid var(--grid);
 }
 
 ul.tree-row > li::after {
   right: auto;
   left: 50%;
-  border-left: 2px solid var(--line);
+  border-left: 1px solid var(--grid);
 }
 
 /* Anak tunggal: cukup garis lurus dari induk */
@@ -210,14 +403,14 @@ ul.tree-row > li:last-child::after {
   border: 0 none;
 }
 ul.tree-row > li:last-child::before {
-  border-right: 2px solid var(--line);
+  border-right: 1px solid var(--grid);
   border-radius: 0 6px 0 0;
 }
 ul.tree-row > li:first-child::after {
   border-radius: 6px 0 0 0;
 }
 
-/* ---------- 2. Kolom departemen ---------- */
+/* ---------- Kolom departemen ---------- */
 
 .dept-columns {
   position: relative;
@@ -226,14 +419,14 @@ ul.tree-row > li:first-child::after {
   padding-top: 24px;
 }
 
-/* Garis turun dari kartu induk (Direksi) ke garis bus horizontal */
+/* Garis turun dari kartu induk ke garis bus horizontal */
 .dept-columns::before {
   content: '';
   position: absolute;
   top: 0;
   left: 50%;
   height: 24px;
-  border-left: 2px solid var(--line);
+  border-left: 1px solid var(--grid);
 }
 
 .dept-cols-inner {
@@ -250,7 +443,7 @@ ul.tree-row > li:first-child::after {
   top: 0;
   left: 0;
   right: 228px; /* = lebar .dept-col → berhenti tepat di rel kolom terakhir */
-  border-top: 2px solid var(--line);
+  border-top: 1px solid var(--grid);
 }
 
 .dept-col {
@@ -279,7 +472,7 @@ ul.hang-list {
   top: 0;
   bottom: 0;
   left: 0;
-  border-left: 2px solid var(--line);
+  border-left: 1px solid var(--grid);
 }
 
 /* Item terakhir: rel berhenti di siku */
@@ -295,7 +488,7 @@ ul.hang-list {
   top: 30px;
   left: 0;
   width: 20px;
-  border-top: 2px solid var(--line);
+  border-top: 1px solid var(--grid);
 }
 
 /* Sub-departemen: menjorok ke dalam di bawah kartu induknya */
@@ -311,11 +504,27 @@ ul.hang-list ul.hang-sub {
 }
 
 @media print {
+  /* Kertas selalu terang, apa pun tema layar */
+  :root,
+  :root[data-theme='dark'] {
+    --paper: #ffffff;
+    --mist: #f4f6fc;
+    --ink: #0b1020;
+    --ink-2: #5a6178;
+    --muted: #9a9fb0;
+    --line: #e6e9f3;
+    --line-2: #f0f2f8;
+    --grid: #d5dbea;
+    --blue: #005da6;
+    --blue-ink: #00447c;
+    --blue-wash: #e8f1f8;
+    color-scheme: light;
+  }
   .no-print {
     display: none !important;
   }
   body {
-    @apply bg-white;
+    background: #ffffff;
   }
   .print-full {
     max-height: none !important;

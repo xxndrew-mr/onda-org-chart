@@ -102,41 +102,40 @@ function ChartBox({
 
   const width =
     variant === 'list' ? (depth === 0 ? 'w-52' : depth === 1 ? 'w-[176px]' : 'w-[144px]') : 'w-52';
+  // Kartu = panel kertas dengan aksen tipis warna keluarga (hairline, tanpa
+  // shadow); hanya node tanpa keluarga DAN bukan orang yang tampil biru padat
   const skin = fam
-    ? `border-slate-200 border-l-4 ${fam.bar} bg-white`
+    ? `border-line border-l-[3px] ${fam.bar} bg-paper`
     : person
-      ? 'border-slate-200 border-l-4 border-l-slate-400 bg-white'
-      : node.level === 0
-        ? 'border-brand-700 bg-brand-700'
-        : 'border-brand-600 bg-brand-600';
+      ? 'border-line border-l-[3px] border-l-grid bg-paper'
+      : 'border-blue bg-blue';
 
   const card = (
     <button
       type="button"
       onClick={() => (person ? onSelectPerson(person) : onSelect(node.id))}
-      className={`${width} rounded-xl border ${skin} ${person ? 'px-3 py-2' : 'px-3 py-2.5'} text-left shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg ${
-        isSelected ? 'ring-2 ring-brand-400 ring-offset-2' : ''
+      className={`${width} rounded-token border ${skin} ${person ? 'px-3 py-2' : 'px-3 py-2.5'} text-left transition-all duration-150 hover:-translate-y-0.5 hover:border-grid ${
+        isSelected ? '!border-blue' : ''
       }`}
     >
       {person ? (
         <div className="flex items-center gap-2">
           <Avatar name={person.name} src={person.avatar} size={26} />
           <span className="min-w-0">
-            <span
-              className="block truncate text-[12px] font-medium text-slate-800"
-              title={person.name}
-            >
+            <span className="block truncate text-[12px] font-medium text-ink" title={person.name}>
               {person.name}
             </span>
             {person.jobTitle && (
-              <span className="block truncate text-[10px] text-slate-500">{person.jobTitle}</span>
+              <span className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-muted">
+                {person.jobTitle}
+              </span>
             )}
           </span>
         </div>
       ) : (
         <>
           <p
-            className={`truncate text-sm font-semibold ${fam ? fam.text : 'text-white'}`}
+            className={`truncate text-[13px] font-medium ${solid ? 'text-paper' : 'text-ink'}`}
             title={node.name}
           >
             {node.name}
@@ -145,27 +144,23 @@ function ChartBox({
           {node.leader ? (
             <div className="mt-1.5 flex items-center gap-1.5">
               <Avatar name={node.leader.name} src={node.leader.avatar} size={22} />
-              <span className={`truncate text-[11px] ${solid ? 'text-brand-50' : 'text-slate-600'}`}>
+              <span className={`truncate text-[11px] ${solid ? 'text-paper/80' : 'text-ink-2'}`}>
                 {node.leader.name}
               </span>
             </div>
           ) : (
-            <p className={`mt-1.5 text-[11px] italic ${solid ? 'text-brand-100' : 'text-slate-400'}`}>
+            <p className={`mt-1.5 text-[11px] italic ${solid ? 'text-paper/70' : 'text-muted'}`}>
               Belum ada head
             </p>
           )}
 
-          <div className="mt-2 flex items-center gap-1.5 text-[10px]">
-            <span
-              className={`rounded-full px-1.5 py-0.5 font-semibold tabular-nums ${
-                solid ? 'bg-white/15 text-white' : fam ? fam.chip : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {node.totalHeadcount} orang
-            </span>
-            {subCount > 0 && (
-              <span className={solid ? 'text-brand-100' : 'text-slate-500'}>· {subCount} sub</span>
-            )}
+          <div
+            className={`mt-2 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] ${
+              solid ? 'text-paper/80' : 'text-muted'
+            }`}
+          >
+            <span className="tabular-nums">{node.totalHeadcount} orang</span>
+            {subCount > 0 && <span className="tabular-nums">· {subCount} sub</span>}
           </div>
         </>
       )}
@@ -178,7 +173,7 @@ function ChartBox({
       onClick={() => onToggle(node.id)}
       className={`${
         variant === 'tree' ? '-mt-2' : 'absolute -right-2 top-1/2 -translate-y-1/2'
-      } z-10 rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 shadow-sm transition hover:border-brand-400 hover:text-brand-600`}
+      } z-10 rounded-full border border-line bg-paper px-2 py-0.5 font-mono text-[10px] font-bold text-ink-2 transition hover:border-blue hover:text-blue`}
       aria-expanded={!isCollapsed}
     >
       {isCollapsed ? `+ ${node.children.length}` : '−'}
@@ -443,7 +438,8 @@ export default function ChartView({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
       onPointerCancel={handlePointerEnd}
-      className="thin-scroll print-full chart-canvas flex h-full cursor-grab flex-col overflow-auto rounded-2xl border border-slate-200 p-6"
+      data-lenis-prevent
+      className="thin-scroll print-full chart-canvas flex h-full cursor-grab flex-col overflow-auto rounded-2xl border border-line p-6"
     >
       {/* CSS zoom (bukan transform) supaya layout & centering ikut terskala.
           mx-auto/my-auto (bukan self-center): auto-margin menengahkan konten

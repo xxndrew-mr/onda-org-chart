@@ -5,9 +5,10 @@ import Avatar from './Avatar';
 import ChartView from './ChartView';
 import DeptTree from './DeptTree';
 import DetailPanel from './DetailPanel';
-import HeroBackground from './HeroBackground';
 import OndaLogo from './OndaLogo';
 import SearchResults from './SearchResults';
+import ThemeToggle from './ThemeToggle';
+import { useReveal } from './useReveal';
 import { familyColor } from '@/lib/colors';
 import {
   allDeptIds,
@@ -70,9 +71,11 @@ function StatChip({ label, value }: { label: string; value: number | string }) {
   }, [value]);
 
   return (
-    <div className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 backdrop-blur-sm">
-      <span className="text-base font-semibold tabular-nums text-white">{display}</span>
-      <span className="ml-1.5 text-[10px] font-medium uppercase tracking-wide text-brand-100">
+    <div className="flex items-baseline gap-1.5">
+      <span className="font-mono text-lg font-bold leading-none tabular-nums text-white">
+        {display}
+      </span>
+      <span className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-white/60">
         {label}
       </span>
     </div>
@@ -97,6 +100,11 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   const [scopeId, setScopeId] = useState('');
   /** Orang yang kartunya diklik di bagan — profilnya tampil di banner */
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  /** Drawer menu mobile (presentasi saja) */
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const mastheadRef = useReveal<HTMLElement>();
+  const mainRef = useReveal<HTMLElement>(120);
 
   const selectedIdRef = useRef('');
   useEffect(() => {
@@ -345,10 +353,12 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
   if (state.status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500">
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <div className="flex items-center gap-3 text-muted">
           <Spinner />
-          <span className="text-sm">Menarik data dari Lark…</span>
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em]">
+            Menarik data dari Lark…
+          </span>
         </div>
       </div>
     );
@@ -356,31 +366,31 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
   if (state.status === 'error') {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-lg rounded-2xl border border-rose-200 bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-bold text-rose-700">Gagal memuat struktur organisasi</h1>
-          <p className="mt-2 text-sm text-slate-700">{state.error}</p>
+      <div className="flex min-h-screen items-center justify-center bg-paper p-6">
+        <div className="panel w-full max-w-lg border-l-[3px] border-l-danger p-6">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-danger">
+            Error — koneksi Lark
+          </p>
+          <h1 className="mt-2 font-display text-2xl font-bold leading-tight tracking-[-0.02em] text-ink">
+            Gagal memuat struktur organisasi
+          </h1>
+          <p className="mt-3 text-sm text-ink-2">{state.error}</p>
           {state.hint && (
-            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">💡 {state.hint}</p>
+            <p className="hairline mt-4 pt-3 font-mono text-[11px] leading-relaxed text-ink-2">
+              {state.hint}
+            </p>
           )}
           {state.code !== undefined && (
-            <p className="mt-3 text-[11px] text-slate-400">Kode error: {String(state.code)}</p>
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              Kode: {String(state.code)}
+            </p>
           )}
-          <div className="mt-5 flex gap-2">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              Coba lagi
+          <div className="mt-6 flex gap-2">
+            <button type="button" onClick={() => void load()} className="pill pill-primary">
+              Coba lagi <span className="arrow">↗</span>
             </button>
-            <a
-              href="/api/health"
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cek koneksi Lark
+            <a href="/api/health" target="_blank" rel="noreferrer" className="pill">
+              Cek koneksi
             </a>
           </div>
         </div>
@@ -390,201 +400,240 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
   const { data } = state;
 
+  /* Kontrol toolbar — dipakai di baris desktop DAN drawer mobile */
+  const viewTabs = (
+    <div className="flex shrink-0 rounded-full border border-line p-0.5">
+      {(['chart', 'list'] as ViewMode[]).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => {
+            setView(mode);
+            setQuery('');
+          }}
+          className={`rounded-full px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition ${
+            view === mode && !isSearching ? 'bg-blue text-paper' : 'text-ink-2 hover:bg-mist'
+          }`}
+        >
+          {mode === 'chart' ? 'Bagan' : 'Daftar'}
+        </button>
+      ))}
+    </div>
+  );
+
+  const chartControls = view === 'chart' && !isSearching && (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <select
+        value={scopeId}
+        onChange={(e) => handleScopeChange(e.target.value)}
+        className="field h-9 w-auto max-w-[220px] py-0 pr-8 text-[13px]"
+        aria-label="Cakupan bagan"
+      >
+        <option value="">Seluruh organisasi</option>
+        {scopeOptions.map((d) => (
+          <option key={d.id} value={d.id}>
+            {'   '.repeat(Math.max(0, d.level - deptLevel))}
+            {d.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => {
+          setFitMode(false);
+          setZoom((z) => Math.max(0.3, Math.round((z - 0.1) * 10) / 10));
+        }}
+        className="pill h-9 w-9 p-0"
+        aria-label="Perkecil"
+      >
+        −
+      </button>
+      <span className="w-11 text-center font-mono text-[11px] font-bold tabular-nums text-muted">
+        {Math.round(zoom * 100)}%
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          setFitMode(false);
+          setZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10));
+        }}
+        className="pill h-9 w-9 p-0"
+        aria-label="Perbesar"
+      >
+        +
+      </button>
+      <button
+        type="button"
+        onClick={() => setFitMode(true)}
+        title="Sesuaikan bagan dengan lebar layar"
+        className={`pill h-9 ${fitMode ? 'pill-primary' : ''}`}
+      >
+        Pas layar
+      </button>
+      <button
+        type="button"
+        onClick={() => chartRoot && setCollapsed(new Set(idsFromLevel(chartRoot, 1)))}
+        className="pill h-9"
+      >
+        Tutup
+      </button>
+      <button type="button" onClick={() => setCollapsed(new Set())} className="pill h-9">
+        Buka
+      </button>
+    </div>
+  );
+
+  const listControls = view === 'list' && !isSearching && (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => root && setExpanded(new Set(allDeptIds(root)))}
+        className="pill h-9"
+      >
+        Buka semua
+      </button>
+      <button
+        type="button"
+        onClick={() => root && setExpanded(new Set([root.id]))}
+        className="pill h-9"
+      >
+        Tutup semua
+      </button>
+    </div>
+  );
+
+  const actions = (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={() => window.print()} className="pill h-9">
+        Cetak
+      </button>
+      <button
+        type="button"
+        onClick={() => void load(true)}
+        disabled={refreshing}
+        className="pill pill-primary h-9 disabled:opacity-60"
+      >
+        {refreshing && <Spinner />}
+        {refreshing ? 'Menyinkron…' : 'Sinkron ulang'}
+        {!refreshing && <span className="arrow">↗</span>}
+      </button>
+    </div>
+  );
+
   return (
-    <div className="print-h-auto flex h-screen flex-col">
-      {/* ---------- Header ---------- */}
-      <header className="no-print relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-brand-500 px-5 pb-12 pt-6 text-white">
-        <HeroBackground />
-        {/* Glow lembut supaya gradien tidak datar */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-28 right-[15%] h-72 w-72 rounded-full bg-white/10 blur-3xl"
-        />
-        <div className="relative mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
-          <div className="anim-rise flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-sm">
+    <div className="print-h-auto flex h-screen flex-col bg-paper">
+      {/* ---------- Masthead brand bar (biru Onda) ---------- */}
+      <header ref={mastheadRef} className="no-print bg-[#005DA6] px-5 py-3">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-x-8 gap-y-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-token border border-white/20 bg-white p-1">
               <OndaLogo className="h-full w-full" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{data.root.name || orgName}</h1>
-              <p className="mt-0.5 text-xs text-brand-100">
-                Struktur organisasi · sinkron dari Lark ·{' '}
-                {new Date(data.generatedAt).toLocaleString('id-ID', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
-                {data.cached && ' (cache)'}
-              </p>
-            </div>
+            <h1 className="truncate font-display text-2xl font-bold leading-none tracking-[-0.02em] text-white">
+              {data.root.name || orgName}
+            </h1>
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-white/60 lg:inline">
+              {new Date(data.generatedAt).toLocaleString('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+              {data.cached && ' · cache'}
+            </span>
           </div>
 
-          <div className="anim-rise anim-rise-1 flex flex-wrap items-center gap-2">
-            <StatChip label="departemen" value={data.stats.totalDepartments} />
-            <StatChip label="karyawan" value={data.stats.totalPeople} />
-            <StatChip label="level" value={data.stats.maxDepth} />
+          <div className="flex items-center gap-6">
+            <StatChip label="Departemen" value={data.stats.totalDepartments} />
+            <StatChip label="Karyawan" value={data.stats.totalPeople} />
+            <StatChip label="Level" value={data.stats.maxDepth} />
           </div>
         </div>
       </header>
 
-      {/* ---------- Floating navbar ---------- */}
-      <div className="no-print sticky top-3 z-40 -mt-7 px-5">
-        <div className="anim-rise anim-rise-2 mx-auto flex max-w-[1600px] flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-2.5 shadow-lg shadow-slate-900/10 backdrop-blur-md">
-          <div className="relative min-w-[200px] flex-1">
+      {/* ---------- Navbar hairline ---------- */}
+      <div className="no-print sticky top-0 z-40 border-b border-line bg-paper">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2.5 px-5 py-2.5">
+          <div className="relative min-w-[180px] flex-1">
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari nama, jabatan, email, atau departemen…"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-brand-400 focus:bg-white focus:ring-2 focus:ring-brand-100"
+              className="field h-10 pl-10"
             />
             <svg
               viewBox="0 0 20 20"
-              className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400"
-              fill="currentColor"
+              className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-muted"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
               aria-hidden
             >
-              <path
-                fillRule="evenodd"
-                d="M9 3.5a5.5 5.5 0 103.39 9.84l3.63 3.64a.75.75 0 101.06-1.06l-3.63-3.64A5.5 5.5 0 009 3.5zM5 9a4 4 0 118 0 4 4 0 01-8 0z"
-                clipRule="evenodd"
-              />
+              <circle cx="9" cy="9" r="5.5" />
+              <path d="m13.5 13.5 3.5 3.5" strokeLinecap="round" />
             </svg>
           </div>
 
-          <div className="flex rounded-lg border border-slate-300 p-0.5">
-            {(['chart', 'list'] as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => {
-                  setView(mode);
-                  setQuery('');
-                }}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                  view === mode && !isSearching
-                    ? 'bg-brand-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {mode === 'chart' ? 'Bagan' : 'Daftar'}
-              </button>
-            ))}
+          {viewTabs}
+
+          {/* Desktop: kontrol inline */}
+          <div className="hidden flex-wrap items-center gap-2.5 md:flex">
+            <span aria-hidden className="hidden h-6 w-px bg-line lg:block" />
+            {chartControls}
+            {listControls}
           </div>
 
-          {view === 'chart' && !isSearching && (
-            <div className="flex flex-wrap items-center gap-1">
-              <span aria-hidden className="mx-1 hidden h-6 w-px bg-slate-200 lg:block" />
-              <select
-                value={scopeId}
-                onChange={(e) => handleScopeChange(e.target.value)}
-                className="max-w-[220px] rounded-lg border border-slate-200 bg-white py-1.5 pl-2 pr-7 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-brand-400"
-                aria-label="Cakupan bagan"
-              >
-                <option value="">Seluruh organisasi</option>
-                {scopeOptions.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {'   '.repeat(Math.max(0, d.level - deptLevel))}
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  setFitMode(false);
-                  setZoom((z) => Math.max(0.3, Math.round((z - 0.1) * 10) / 10));
-                }}
-                className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-                aria-label="Perkecil"
-              >
-                −
-              </button>
-              <span className="w-12 text-center text-xs tabular-nums text-slate-500">
-                {Math.round(zoom * 100)}%
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="hidden items-center gap-1.5 md:flex">
+              <span aria-hidden className="mr-1 hidden h-6 w-px bg-line lg:block" />
+              {actions}
+            </div>
+            <ThemeToggle />
+            {/* Mobile: hamburger yang morph jadi X */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
+              className="pill h-9 w-9 p-0 md:hidden"
+            >
+              <span className="relative block h-[11px] w-4" aria-hidden>
+                <span
+                  className={`absolute left-0 top-0 block h-px w-full bg-current transition-transform duration-300 ${
+                    menuOpen ? 'translate-y-[5px] rotate-45' : ''
+                  }`}
+                />
+                <span
+                  className={`absolute bottom-0 left-0 block h-px w-full bg-current transition-transform duration-300 ${
+                    menuOpen ? '-translate-y-[5px] -rotate-45' : ''
+                  }`}
+                />
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setFitMode(false);
-                  setZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10));
-                }}
-                className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-                aria-label="Perbesar"
-              >
-                +
-              </button>
-              <button
-                type="button"
-                onClick={() => setFitMode(true)}
-                title="Sesuaikan bagan dengan lebar layar"
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                  fitMode
-                    ? 'border-brand-600 bg-brand-600 text-white'
-                    : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                Pas layar
-              </button>
-              <button
-                type="button"
-                onClick={() => chartRoot && setCollapsed(new Set(idsFromLevel(chartRoot, 1)))}
-                className="ml-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-              >
-                Tutup semua
-              </button>
-              <button
-                type="button"
-                onClick={() => setCollapsed(new Set())}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-              >
-                Buka semua
-              </button>
-            </div>
-          )}
-
-          {view === 'list' && !isSearching && (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => root && setExpanded(new Set(allDeptIds(root)))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-              >
-                Buka semua
-              </button>
-              <button
-                type="button"
-                onClick={() => root && setExpanded(new Set([root.id]))}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-              >
-                Tutup semua
-              </button>
-            </div>
-          )}
-
-          <div className="ml-auto flex items-center gap-2">
-            <span aria-hidden className="mr-0.5 hidden h-6 w-px bg-slate-200 lg:block" />
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50"
-            >
-              Cetak
             </button>
-            <button
-              type="button"
-              onClick={() => void load(true)}
-              disabled={refreshing}
-              className="flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-            >
-              {refreshing && <Spinner />}
-              {refreshing ? 'Menyinkron…' : 'Sinkron ulang'}
-            </button>
+          </div>
+        </div>
+
+        {/* Drawer mobile: grid-rows 0fr -> 1fr, inert saat tertutup */}
+        <div
+          className="grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden"
+          style={{ gridTemplateRows: menuOpen ? '1fr' : '0fr' }}
+        >
+          <div
+            inert={!menuOpen}
+            className={`overflow-hidden transition-opacity duration-300 ${
+              menuOpen ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <div className="flex flex-col items-start gap-3 border-t border-line px-5 py-4">
+              {chartControls}
+              {listControls}
+              {actions}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ---------- Body ---------- */}
-      <main className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 p-5">
+      <main ref={mainRef} className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 p-5">
         <div key={isSearching ? 'search' : view} className="anim-fade h-full">
         {isSearching ? (
           <div className="h-full">
@@ -600,8 +649,8 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
             {selectedPerson && (
               <div
                 key={`${selectedPerson.id}:${selectedPerson.departmentId}`}
-                className={`anim-fade flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200 border-l-4 bg-white px-4 py-2.5 shadow-sm ${
-                  familyColor(selectedPersonDept?.colorIndex)?.bar ?? 'border-l-brand-600'
+                className={`anim-fade panel flex flex-wrap items-center gap-x-4 gap-y-2 border-l-[3px] px-4 py-2.5 ${
+                  familyColor(selectedPersonDept?.colorIndex)?.bar ?? 'border-l-blue'
                 }`}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -610,7 +659,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                     {/* Path lengkap terlalu panjang untuk banner — cukup entitas
                         induknya; jalur penuh tersedia sebagai tooltip */}
                     <p
-                      className="truncate text-[10px] uppercase tracking-wide text-slate-400"
+                      className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted"
                       title={selectedPersonDept?.path.slice(1).join(' / ')}
                     >
                       Profil Karyawan
@@ -619,18 +668,14 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                       )}
                     </p>
                     <div className="flex min-w-0 items-baseline gap-2">
-                      <h2 className="truncate text-base font-bold leading-tight text-slate-900">
+                      <h2 className="truncate font-display text-base font-bold leading-tight tracking-[-0.02em] text-ink">
                         {selectedPerson.name}
                       </h2>
-                      {selectedPerson.isLeader && (
-                        <span className="shrink-0 rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
-                          Head
-                        </span>
-                      )}
+                      {selectedPerson.isLeader && <span className="badge badge-blue">Head</span>}
                       {selectedPerson.enName &&
                         selectedPerson.enName.trim().toLowerCase() !==
                           selectedPerson.name.trim().toLowerCase() && (
-                          <span className="hidden truncate text-xs text-slate-400 sm:inline">
+                          <span className="hidden truncate text-xs text-muted sm:inline">
                             ({selectedPerson.enName})
                           </span>
                         )}
@@ -638,18 +683,13 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
                   {selectedPerson.jobTitle && (
-                    <span className="max-w-[200px] truncate rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
-                      {selectedPerson.jobTitle}
-                    </span>
+                    <span className="badge max-w-[200px] truncate">{selectedPerson.jobTitle}</span>
                   )}
                   {selectedPersonDept && (
                     <span
-                      className={`max-w-[220px] truncate rounded-full px-2.5 py-1 font-semibold ${
-                        familyColor(selectedPersonDept.colorIndex)?.chip ??
-                        'bg-slate-100 text-slate-600'
-                      }`}
+                      className="badge max-w-[220px] truncate"
                       title={selectedPersonDept.path.slice(1).join(' / ')}
                     >
                       {selectedPersonDept.name}
@@ -658,26 +698,20 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                   {selectedPerson.email && (
                     <a
                       href={`mailto:${selectedPerson.email}`}
-                      className="max-w-[220px] truncate rounded-full bg-brand-50 px-2.5 py-1 font-medium text-brand-700 hover:bg-brand-100 hover:underline"
+                      className="badge badge-blue max-w-[220px] truncate normal-case hover:underline"
                     >
                       {selectedPerson.email}
                     </a>
                   )}
                   {selectedPerson.employeeNo && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
-                      NIK {selectedPerson.employeeNo}
-                    </span>
+                    <span className="badge">NIK {selectedPerson.employeeNo}</span>
                   )}
-                  {selectedPerson.city && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
-                      {selectedPerson.city}
-                    </span>
-                  )}
+                  {selectedPerson.city && <span className="badge">{selectedPerson.city}</span>}
                   <button
                     type="button"
                     onClick={() => setSelectedPerson(null)}
                     aria-label="Tutup profil"
-                    className="no-print ml-1 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                    className="pill no-print ml-1 h-7 w-7 p-0"
                   >
                     ✕
                   </button>
@@ -687,16 +721,23 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
             {!selectedPerson && scopedDept && (
               <div
-                className={`flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-slate-200 border-l-4 bg-white px-5 py-3 shadow-sm ${
-                  familyColor(scopedDept.colorIndex)?.bar ?? 'border-l-brand-600'
+                className={`panel flex flex-wrap items-center gap-x-6 gap-y-2 border-l-[3px] px-5 py-3 ${
+                  familyColor(scopedDept.colorIndex)?.bar ?? 'border-l-blue'
                 }`}
               >
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                    Struktur Organisasi · {data.root.name} ·{' '}
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                    <span className="text-blue">
+                      {String(
+                        Math.max(1, scopeOptions.findIndex((d) => d.id === scopedDept.id) + 1),
+                      ).padStart(2, '0')}
+                    </span>{' '}
+                    — Struktur Organisasi · {data.root.name} ·{' '}
                     {new Date(data.generatedAt).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
                   </p>
-                  <h2 className="truncate text-lg font-bold text-slate-900">{scopedDept.name}</h2>
+                  <h2 className="truncate font-display text-xl font-bold tracking-[-0.02em] text-ink">
+                    {scopedDept.name}
+                  </h2>
                 </div>
 
                 {scopedDept.leader && (
@@ -707,26 +748,20 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                       size={34}
                     />
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
                         Kepala Departemen
                       </p>
-                      <p className="text-sm font-semibold text-slate-800">
-                        {scopedDept.leader.name}
-                      </p>
+                      <p className="text-sm font-medium text-ink">{scopedDept.leader.name}</p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 text-xs">
-                  <span
-                    className={`rounded-full px-2.5 py-1 font-semibold tabular-nums ${
-                      familyColor(scopedDept.colorIndex)?.chip ?? 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
+                <div className="flex items-center gap-1.5">
+                  <span className="badge badge-blue tabular-nums">
                     {scopedDept.totalHeadcount} orang
                   </span>
                   {scopedDept.totalSubDepartments > 0 && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold tabular-nums text-slate-600">
+                    <span className="badge tabular-nums">
                       {scopedDept.totalSubDepartments} sub-departemen
                     </span>
                   )}
@@ -735,7 +770,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                 <button
                   type="button"
                   onClick={() => handleScopeChange('')}
-                  className="no-print ml-auto rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  className="pill no-print ml-auto h-9"
                 >
                   ← Seluruh organisasi
                 </button>
@@ -765,7 +800,10 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           </div>
         ) : (
           <div className="print-h-auto grid h-full grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-            <aside className="thin-scroll no-print overflow-auto rounded-2xl border border-slate-200 bg-white p-3">
+            <aside
+              data-lenis-prevent
+              className="thin-scroll no-print overflow-auto rounded-2xl border border-line bg-paper p-3"
+            >
               <DeptTree
                 node={data.root}
                 selectedId={selectedId}

@@ -9,6 +9,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Token editorial — nilai sesungguhnya di CSS variables (globals.css)
+        paper: 'var(--paper)',
+        mist: 'var(--mist)',
+        ink: 'var(--ink)',
+        'ink-2': 'var(--ink-2)',
+        muted: 'var(--muted)',
+        line: 'var(--line)',
+        'line-2': 'var(--line-2)',
+        grid: 'var(--grid)',
+        blue: {
+          DEFAULT: 'var(--blue)',
+          ink: 'var(--blue-ink)',
+          wash: 'var(--blue-wash)',
+        },
+        danger: {
+          DEFAULT: 'var(--danger)',
+          wash: 'var(--danger-wash)',
+          line: 'var(--danger-line)',
+        },
+        ok: {
+          DEFAULT: 'var(--ok)',
+          wash: 'var(--ok-wash)',
+          line: 'var(--ok-line)',
+        },
+        // Palet brand lama — masih dirujuk beberapa kelas transisi
         brand: {
           50: '#eef4ff',
           100: '#d9e6ff',
@@ -23,7 +48,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Arial', 'sans-serif'],
+        display: ['var(--font-display)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Arial', 'sans-serif'],
+        mono: ['var(--font-data)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      borderRadius: {
+        token: 'var(--radius)',
       },
     },
   },
