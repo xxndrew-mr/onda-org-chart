@@ -6,6 +6,7 @@ import ChartView from './ChartView';
 import DeptTree from './DeptTree';
 import DetailPanel from './DetailPanel';
 import OndaLogo from './OndaLogo';
+import ScopePicker from './ScopePicker';
 import SearchResults from './SearchResults';
 import ThemeToggle from './ThemeToggle';
 import { useReveal } from './useReveal';
@@ -207,7 +208,6 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
   /* ---------------- derived ---------------- */
 
   const root: DeptNode | null = state.status === 'ready' ? state.data.root : null;
-  const deptLevel = state.status === 'ready' ? Math.max(2, state.data.deptLevel || 2) : 2;
 
   const allPeople = useMemo(() => (root ? flattenPeople(root) : []), [root]);
   const allDepartments = useMemo(() => (root ? flattenDepartments(root) : []), [root]);
@@ -436,20 +436,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
 
   const chartControls = view === 'chart' && !isSearching && (
     <div className="flex flex-wrap items-center gap-1.5">
-      <select
-        value={scopeId}
-        onChange={(e) => handleScopeChange(e.target.value)}
-        className="field h-9 w-auto max-w-[220px] py-0 pr-8 text-[13px]"
-        aria-label="Cakupan bagan"
-      >
-        <option value="">Seluruh organisasi</option>
-        {scopeOptions.map((d) => (
-          <option key={d.id} value={d.id}>
-            {'   '.repeat(Math.max(0, d.level - deptLevel))}
-            {d.name}
-          </option>
-        ))}
-      </select>
+      <ScopePicker root={data.root} value={scopeId} onChange={handleScopeChange} />
       <button
         type="button"
         onClick={() => {
