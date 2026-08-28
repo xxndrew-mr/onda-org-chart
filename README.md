@@ -65,6 +65,27 @@ components/
 | `NEXT_PUBLIC_ORG_NAME` | | `Perusahaan` | Nama di node paling atas |
 | `ORG_CACHE_TTL_SECONDS` | | `600` | Umur cache data organisasi |
 | `ORG_REFRESH_KEY` | | kosong | Kalau diisi, `/api/org?refresh=1` butuh `&key=<nilai>` |
+| `SESSION_SECRET` | ✅ | — | Kunci acak (≥32 karakter) untuk menandatangani cookie sesi login |
+| `APP_URL` | | otomatis | Origin publik aplikasi, mis. `https://onda-org-chart.vercel.app` (isi bila di balik proxy) |
+| `AUTH_DISABLED` | | — | `true` = lewati login saat dev lokal. **Diabaikan di production** |
+
+## Login dengan Lark (SSO)
+
+Semua halaman dan `/api/org` dilindungi: pengunjung tanpa sesi dialihkan ke halaman otorisasi Lark
+(`/api/auth/login` → Lark → `/api/auth/callback`). Di dalam **Lark Workplace** otorisasi ini lolos otomatis
+karena pengguna sudah login Lark. Setelah masuk, `open_id` pengguna dicocokkan ke data organisasi dan bagan
+langsung dibuka ke **posisinya sendiri** (banner "Posisi Anda", kartu dirinya disorot). Menu pengguna di
+navbar punya "Posisi saya" dan "Keluar".
+
+Pengaturan di **Lark Developer Console** (app yang sama dengan yang dipakai menarik data):
+
+1. **Security Settings → Redirect URLs**: tambahkan `https://<domain-anda>/api/auth/callback`
+   (dan `http://localhost:3000/api/auth/callback` untuk dev).
+2. **Permissions & Scopes**: pastikan izin dasar profil pengguna aktif (`Get user's basic info` /
+   `contact:user.base:readonly`). Untuk email tampil, tambahkan `contact:user.email:readonly`.
+3. **App Capabilities → Web App**: isi *Desktop/Mobile home URL* dengan `https://<domain-anda>`,
+   lalu **publish** versi baru → aplikasi muncul di Workplace.
+4. Set `SESSION_SECRET` (dan `LARK_APP_ID`/`LARK_APP_SECRET`) di environment variables Vercel.
 
 ## Cara Kerjanya
 

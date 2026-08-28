@@ -85,8 +85,23 @@ function StatChip({ label, value }: { label: string; value: number | string }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function OrgExplorer({ orgName }: { orgName: string }) {
+/** Pengguna yang login lewat Lark (dibaca dari cookie sesi di server) */
+export interface ViewerInfo {
+  openId: string;
+  name: string;
+  avatar?: string;
+}
+
+export default function OrgExplorer({
+  orgName,
+  viewer = null,
+}: {
+  orgName: string;
+  viewer?: ViewerInfo | null;
+}) {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const [view, setView] = useState<ViewMode>('chart');
@@ -164,11 +179,15 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           nextCollapsed.delete(id);
         }
       } else {
-        // Kunjungan awal: langsung buka bagan PT Onda Mega Integra 4 lapis
-        // (dicari berdasarkan nama supaya tahan terhadap perubahan id di Lark)
-        const target = flattenDepartments(json.root).find((c) =>
-          /onda\s*mega\s*integra/i.test(c.name),
-        );
+        // Kunjungan awal: kalau pengguna yang login dikenali di data organisasi,
+        // langsung buka POSISINYA (departemen + kartu dirinya). Kalau tidak,
+        // buka bagan PT Onda Mega Integra 4 lapis (dicari berdasarkan nama).
+        const me = viewer
+          ? flattenPeople(json.root).find((p) => p.id === viewer.openId)
+          : undefined;
+        const target = me
+          ? findNode(json.root, me.departmentId)
+          : flattenDepartments(json.root).find((c) => /onda\s*mega\s*integra/i.test(c.name));
         if (target) {
           const scopedTree = buildDeptChart(target);
           for (const id of allDeptIds(target)) nextCollapsed.delete(id);
@@ -176,6 +195,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
           setScopeId(target.id);
           setSelectedId(target.id);
         }
+        if (me) setSelectedPerson(me);
       }
       setExpanded(nextExpanded);
       setCollapsed(nextCollapsed);
@@ -188,7 +208,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [viewer]);
 
   useEffect(() => {
     void load();
@@ -361,6 +381,36 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
     },
     [root],
   );
+
+  /** Lompat ke posisi pengguna yang login: scope ke departemennya + soroti kartunya */
+  const focusMyPosition = useCallback(() => {
+    if (!root || !viewer) return;
+    const me = flattenPeople(root).find((p) => p.id === viewer.openId);
+    if (!me) return;
+    handleScopeChange(me.departmentId);
+    setSelectedPerson(me);
+  }, [root, viewer, handleScopeChange]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Gagal pun tetap muat ulang — middleware akan meminta login lagi
+    }
+    window.location.href = '/';
+  }, []);
+
+  // Menu pengguna menutup saat klik di luar
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [userMenuOpen]);
 
   /* ---------------- render ---------------- */
 
@@ -587,6 +637,49 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
               <span aria-hidden className="mr-1 hidden h-6 w-px bg-line lg:block" />
               {actions}
             </div>
+            {viewer && (
+              <div ref={userMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen((open) => !open)}
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="menu"
+                  title={viewer.name}
+                  className="pill h-9 gap-2 pl-1.5 pr-3 normal-case tracking-normal"
+                >
+                  <Avatar name={viewer.name} src={viewer.avatar} size={24} />
+                  <span className="hidden max-w-[120px] truncate font-sans text-xs font-medium sm:inline">
+                    {viewer.name.split(' ')[0]}
+                  </span>
+                </button>
+                {userMenuOpen && (
+                  <div role="menu" className="panel absolute right-0 top-full z-50 mt-2 w-60 p-1.5">
+                    <p className="truncate px-2.5 pb-1.5 pt-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                      {viewer.name}
+                    </p>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        focusMyPosition();
+                        setUserMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-ink transition hover:bg-mist"
+                    >
+                      Posisi saya <span className="ml-auto font-mono text-[10px] text-muted">↗</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={handleLogout}
+                      className="flex w-full items-center rounded-lg px-2.5 py-2 text-left text-sm text-danger transition hover:bg-danger-wash"
+                    >
+                      Keluar
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <ThemeToggle />
             {/* Mobile: hamburger yang morph jadi X */}
             <button
@@ -662,7 +755,7 @@ export default function OrgExplorer({ orgName }: { orgName: string }) {
                       className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted"
                       title={selectedPersonDept?.path.slice(1).join(' / ')}
                     >
-                      Profil Karyawan
+                      {viewer && selectedPerson.id === viewer.openId ? 'Posisi Anda' : 'Profil Karyawan'}
                       {selectedPersonDept && selectedPersonDept.path.length > 1 && (
                         <> · {selectedPersonDept.path[1]}</>
                       )}
