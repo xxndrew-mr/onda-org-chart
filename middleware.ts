@@ -4,10 +4,10 @@ import { SESSION_COOKIE, verifySessionToken } from '@/lib/session';
 /**
  * Pelindung halaman & API data: tanpa sesi login Lark yang valid,
  * halaman dialihkan ke /api/auth/login dan API menjawab 401.
- * /api/auth/* dan /api/health sengaja tidak dicakup matcher.
+ * /api/auth/* sengaja tidak dicakup matcher (dibutuhkan untuk login).
  */
 export const config = {
-  matcher: ['/', '/api/org'],
+  matcher: ['/', '/api/org', '/api/health'],
 };
 
 export async function middleware(request: NextRequest) {

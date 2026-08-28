@@ -6,8 +6,11 @@
 
 export const SESSION_COOKIE = 'onda_session';
 export const OAUTH_STATE_COOKIE = 'onda_oauth_state';
-/** Umur sesi: 7 hari */
-export const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
+/**
+ * Umur sesi: 24 jam. Sesi ini stateless (tidak bisa dicabut dari server),
+ * jadi TTL sengaja pendek — login ulang di Lark Workplace berlangsung otomatis.
+ */
+export const SESSION_TTL_SECONDS = 24 * 60 * 60;
 
 export interface SessionUser {
   openId: string;

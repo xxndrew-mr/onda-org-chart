@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * Endpoint diagnostik: cek apakah credential Lark sudah benar
- * sebelum menyalahkan bagian lain. Buka /api/health di browser.
+ * Endpoint diagnostik (hanya untuk pengguna yang sudah login — dijaga middleware):
+ * cek apakah credential Lark sudah benar. Memakai token yang di-cache supaya
+ * tidak bisa dipakai membanjiri endpoint token Lark.
  */
 export async function GET() {
   const config = {
@@ -18,11 +19,10 @@ export async function GET() {
   };
 
   try {
-    const token = await getTenantAccessToken(true);
+    await getTenantAccessToken();
     return NextResponse.json({
       ok: true,
       message: 'Berhasil terhubung ke Lark. Credential valid.',
-      tokenPreview: `${token.slice(0, 6)}...${token.slice(-4)}`,
       config,
     });
   } catch (error) {

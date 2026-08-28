@@ -9,14 +9,33 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+/** Semua teks yang masuk ke HTML wajib di-escape — parameter query bisa dikendalikan penyerang */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function failPage(message: string, status = 400) {
   return new NextResponse(
     `<!doctype html><meta charset="utf-8"><title>Login gagal</title>
 <body style="font-family:system-ui;padding:40px;color:#0b1020">
 <h1 style="font-size:20px">Login Lark gagal</h1>
-<p style="color:#5a6178">${message}</p>
+<p style="color:#5a6178">${escapeHtml(message)}</p>
 <p><a href="/api/auth/login" style="color:#005da6">Coba login lagi</a></p></body>`,
-    { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+    {
+      status,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        // Halaman statis tanpa skrip — CSP ketat sebagai lapisan kedua
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'",
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'no-referrer',
+      },
+    },
   );
 }
 
@@ -27,7 +46,8 @@ export async function GET(request: Request) {
   const state = url.searchParams.get('state');
   const larkError = url.searchParams.get('error');
 
-  if (larkError) return failPage(`Lark menolak otorisasi: ${larkError}`);
+  // Nilai error dari Lark tidak dipantulkan mentah — cukup kode yang dibatasi panjangnya
+  if (larkError) return failPage(`Lark menolak otorisasi (${larkError.slice(0, 64)}).`);
   if (!code || !state) return failPage('Parameter code/state tidak lengkap.');
 
   const cookieHeader = request.headers.get('cookie') || '';

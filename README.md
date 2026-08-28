@@ -11,7 +11,8 @@ Web struktur organisasi yang menarik data **langsung dari Lark** (departemen, su
 - **Interaksi modern** — latar Three.js di header, smooth scroll berinersia pada kanvas & panel, Ctrl+scroll untuk zoom bagan, drag untuk menggeser kanvas, animasi entrance & transisi antar-tampilan (otomatis nonaktif pada *prefers-reduced-motion* dan saat mencetak)
 - **Sinkron on-demand** — tombol "Sinkron ulang" untuk ambil data terbaru dari Lark
 - **Cache server** — hasil di-cache 10 menit supaya tidak menghajar rate limit Lark
-- **Diagnostik** — endpoint `/api/health` untuk cek credential sebelum menyalahkan hal lain
+- **Diagnostik** — endpoint `/api/health` (perlu login) untuk cek credential sebelum menyalahkan hal lain
+- **Login Lark (SSO)** — semua halaman & data dilindungi; setelah masuk, bagan langsung membuka posisi pengguna. Hanya akun yang ada di struktur organisasi yang bisa membaca data (karyawan nonaktif otomatis kehilangan akses)
 
 ## Mulai Cepat
 
@@ -64,7 +65,7 @@ components/
 | `LARK_ROOT_DEPARTMENT_ID` | | `0` | `0` = seluruh perusahaan. Isi `open_department_id` untuk tampilkan sub-tree saja |
 | `NEXT_PUBLIC_ORG_NAME` | | `Perusahaan` | Nama di node paling atas |
 | `ORG_CACHE_TTL_SECONDS` | | `600` | Umur cache data organisasi |
-| `ORG_REFRESH_KEY` | | kosong | Kalau diisi, `/api/org?refresh=1` butuh `&key=<nilai>` |
+| `ORG_REFRESH_KEY` | | kosong | Tanpa key: "Sinkron ulang" dibatasi 1× per menit. Kalau diisi, refresh paksa hanya lewat `/api/org?refresh=1&key=<nilai>`; tombol di web dilayani dari cache |
 | `SESSION_SECRET` | ✅ | — | Kunci acak (≥32 karakter) untuk menandatangani cookie sesi login |
 | `APP_URL` | | otomatis | Origin publik aplikasi, mis. `https://onda-org-chart.vercel.app` (isi bila di balik proxy) |
 | `AUTH_DISABLED` | | — | `true` = lewati login saat dev lokal. **Diabaikan di production** |

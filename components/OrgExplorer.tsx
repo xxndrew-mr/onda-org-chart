@@ -102,6 +102,8 @@ export default function OrgExplorer({
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  /** Notifikasi ringan (mis. hasil "Sinkron ulang") — hilang sendiri */
+  const [notice, setNotice] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const [view, setView] = useState<ViewMode>('chart');
@@ -137,11 +139,30 @@ export default function OrgExplorer({
 
     try {
       const res = await fetch(`/api/org${refresh ? '?refresh=1' : ''}`, { cache: 'no-store' });
-      const json = (await res.json()) as OrgResponse | OrgErrorResponse;
+      const json = (await res.json()) as
+        | (OrgResponse & { refreshThrottled?: boolean })
+        | OrgErrorResponse;
 
       if (!json.ok) {
+        // Sesi habis → langsung ke halaman login, bukan layar error buntu
+        if (res.status === 401 || json.code === 'UNAUTHENTICATED') {
+          window.location.href = `/api/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+          return;
+        }
+        // Gagal saat "Sinkron ulang" → bagan yang sudah tampil dipertahankan
+        if (refresh) {
+          setNotice(`Sinkron ulang gagal: ${json.error}`);
+          return;
+        }
         setState({ status: 'error', error: json.error, hint: json.hint, code: json.code });
         return;
+      }
+      if (refresh) {
+        setNotice(
+          json.refreshThrottled
+            ? 'Data baru saja disinkron — coba lagi sebentar lagi.'
+            : 'Data berhasil disinkron dari Lark.',
+        );
       }
 
       setState({ status: 'ready', data: json });
@@ -200,6 +221,10 @@ export default function OrgExplorer({
       setExpanded(nextExpanded);
       setCollapsed(nextCollapsed);
     } catch (error) {
+      if (refresh) {
+        setNotice('Sinkron ulang gagal: tidak bisa menghubungi server.');
+        return;
+      }
       setState({
         status: 'error',
         error: error instanceof Error ? error.message : 'Gagal memuat data.',
@@ -400,6 +425,13 @@ export default function OrgExplorer({
     window.location.href = '/';
   }, []);
 
+  // Notifikasi ringan hilang sendiri
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
   // Menu pengguna menutup saat klik di luar
   useEffect(() => {
     if (!userMenuOpen) return;
@@ -448,10 +480,16 @@ export default function OrgExplorer({
               Kode: {String(state.code)}
             </p>
           )}
-          <div className="mt-6 flex gap-2">
-            <button type="button" onClick={() => void load()} className="pill pill-primary">
-              Coba lagi <span className="arrow">↗</span>
-            </button>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {state.code === 'NOT_IN_ORG' ? (
+              <a href="/api/auth/login" className="pill pill-primary">
+                Login ulang <span className="arrow">↗</span>
+              </a>
+            ) : (
+              <button type="button" onClick={() => void load()} className="pill pill-primary">
+                Coba lagi <span className="arrow">↗</span>
+              </button>
+            )}
             <a href="/api/health" target="_blank" rel="noreferrer" className="pill">
               Cek koneksi
             </a>
@@ -724,6 +762,25 @@ export default function OrgExplorer({
           </div>
         </div>
       </div>
+
+      {notice && (
+        <div className="no-print mx-auto w-full max-w-[1600px] px-5 pt-3">
+          <div
+            role="status"
+            className="anim-fade panel flex items-center justify-between gap-3 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-ink-2"
+          >
+            <span className="truncate">{notice}</span>
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              aria-label="Tutup notifikasi"
+              className="pill h-6 w-6 shrink-0 p-0 text-[10px]"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ---------- Body ---------- */}
       <main ref={mainRef} className="mx-auto min-h-0 w-full max-w-[1600px] flex-1 p-5">
